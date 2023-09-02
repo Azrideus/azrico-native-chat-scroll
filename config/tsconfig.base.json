@@ -1,0 +1,27 @@
+{
+	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"lib": ["ES2021", "dom"],
+		"moduleResolution": "node",
+		"strict": true,
+		"resolveJsonModule": true,
+		"isolatedModules": false,
+		"skipLibCheck": true,
+		"noImplicitAny": false,
+		"allowJs": true,
+		"sourceMap": true,
+		"module": "esnext",
+		"jsx": "react",
+		"target": "es6",
+
+		"baseUrl": ".",
+		"paths": {
+			//"globalize": ["node_modules/globalize/dist/globalize"],
+			//"globalize/*": ["node_modules/globalize/dist/globalize/*"],
+			//"cldr": ["node_modules/cldrjs/dist/cldr"],
+			//"cldr/*": ["node_modules/cldrjs/dist/cldr/*"],
+		}
+	},
+	"exclude": ["**/node_modules", "**/dist"]
+}
