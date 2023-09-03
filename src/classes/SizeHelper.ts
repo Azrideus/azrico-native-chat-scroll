@@ -6,54 +6,23 @@ export class SizeHelper {
 
 	_reloadStartingIndex = -1;
 
-	constructor() {
+	constructor(rldf: any = null) {
 		this.clearAll();
+		this.setReloadFunction(rldf);
 	}
 	setReloadFunction(val) {
 		this._relaodfunction = val;
 	}
 	setSizeOf(index, val) {
-		const needsReload = this._cache[index] == null;
 		this._cache[index] = val;
+		this._relaodfunction(index);
 
-		if (needsReload) {
-			if (this._reloadStartingIndex == -1 || this._reloadStartingIndex > index)
-				this._reloadStartingIndex = index;
-			this.reloadGrid();
-		}
-	}
-
-	async waitForResizes() {
-		return await new Promise((resolve, reject) => {
-			setTimeout(() => {
-				console.log('_isWaitingForReload:', this._isWaitingForReload);
-				if (this._isWaitingForReload) {
-					return this._reloadPromise.then(resolve);
-				}
-
-				return resolve(true);
-			}, 100);
-		});
-	}
-	reloadGrid() {
-		if (typeof this._relaodfunction != 'function') {
-			return;
-		}
-		if (this._isWaitingForReload) return;
-		this._isWaitingForReload = true;
-		this._reloadPromise = new Promise((resolve, reject) => {
-			setTimeout(
-				(sh: SizeHelper) => {
-					//console.log('reload afterIndex:', sh._reloadStartingIndex);
-					sh._relaodfunction(sh._reloadStartingIndex);
-					sh._reloadStartingIndex = -1;
-					this._isWaitingForReload = false;
-					resolve(true);
-				},
-				200,
-				this
-			);
-		});
+		// const needsReload = this._cache[index] == null;
+		//if (needsReload) {
+		//if (this._reloadStartingIndex == -1 || this._reloadStartingIndex > index)
+		//	this._reloadStartingIndex = index;
+		// this.reloadGrid();
+		//}
 	}
 
 	getSizeOf(index) {

@@ -4,6 +4,7 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import InfiniteLoader from 'react-window-infinite-loader';
 import SizeHelper from '../classes/SizeHelper';
 import { array_sum } from '@azrico/object';
+import './styles.css';
 
 /* -------------------------------------------------------------------------- */
 
@@ -16,21 +17,26 @@ type ChatListProps = {
 	ItemRender?: React.ElementType<any>;
 };
 
-const BUFFER_SIZE = 5;
+const BUFFER_SIZE = 10;
 const DEFAULT_HEIGHT = 40;
 
 export function ChatList(props: ChatListProps) {
 	const loaderRef = React.useRef<any>();
-	const outerRef = React.useRef<any>();
-	const innerRef = React.useRef<any>();
+	const outerRef = React.useRef<HTMLElement>();
+	const innerRef = React.useRef<HTMLElement>();
 	const endIndex = React.useRef<any>(-1);
 	const lastBottomDistance = React.useRef<any>(-1);
-	const sizeHelper = React.useRef<SizeHelper>(new SizeHelper());
+
+	const sizeHelper = React.useRef<SizeHelper>(
+		new SizeHelper((i) => getListRef().resetAfterIndex(i))
+	);
+
 	const lastScroll = React.useRef<any>({});
 	const pendingItems = React.useRef<number>(0);
-	const avgSize = React.useRef<number>(0);
+	// const avgSize = React.useRef<number>(0);
+	const debugBar = React.useRef<HTMLElement>();
 
-	const [sizeCacheChanged, set_sizeCacheChanged] = React.useState(false);
+	const [sizeCacheChanged, set_sizeCacheChanged] = React.useState(0);
 	const [shouldStick, set_shouldStick] = React.useState(false);
 
 	//older messages are added to end of this list
@@ -68,13 +74,16 @@ export function ChatList(props: ChatListProps) {
 	/* --------------------------------- checks --------------------------------- */
 
 	const getItemSize = (index) => {
-		if (index < BUFFER_SIZE) return avgSize.current;
-		return sizeHelper.current.getSizeOf(index) || avgSize.current;
+		if (index < BUFFER_SIZE) return DEFAULT_HEIGHT;
+		return sizeHelper.current.getSizeOf(index) || DEFAULT_HEIGHT;
 	};
 
 	//the first buffer items are not really loaded, we keep them there so the scroll jumps less often
 	const isItemLoaded = React.useCallback((index) => index > BUFFER_SIZE, [BUFFER_SIZE]);
 
+	/* -------------------------------------------------------------------------- */
+	/*                               load more items                              */
+	/* -------------------------------------------------------------------------- */
 	const loadMoreItems = React.useCallback(
 		async (startIndex, stopIndex) => {
 			if (typeof props.loadFunction !== 'function') {
@@ -117,6 +126,12 @@ export function ChatList(props: ChatListProps) {
 
 				//add the loaded items from db to our list
 				set_items((old_items) => {
+					if (debugBar.current) {
+						debugBar.current.setAttribute(
+							'lc',
+							String(Number(debugBar.current.getAttribute('lc')) + 1)
+						);
+					}
 					const resultMap = [...old_items, ...res];
 					return resultMap;
 				});
@@ -142,6 +157,7 @@ export function ChatList(props: ChatListProps) {
 	);
 	const getItem = React.useCallback(
 		(index) => {
+			if (index < BUFFER_SIZE) return null; //buffer item
 			const actualIndex = getActualIndex(index);
 			if (actualIndex < 0) {
 				//new items (they start at 0 so we add +1)
@@ -165,31 +181,37 @@ export function ChatList(props: ChatListProps) {
 		getListRef()?.scrollTo(r);
 	}
 
-	/* -------------------------- set sizehelper's data ------------------------- */
+	/* -------------------------------------------------------------------------- */
+	/*                                    init                                    */
+	/* -------------------------------------------------------------------------- */
 	React.useEffect(() => {
-		if (loaderRef.current) {
-			sizeHelper.current.setReloadFunction((index) => {
-				set_sizeCacheChanged((s) => !s);
-
-				const sizeList = Object.values(sizeHelper.current._cache);
-				avgSize.current = array_sum(sizeList) / sizeList.length;
-				getListRef().resetAfterIndex(index);
-			});
+		if (!loaderRef.current || !innerRef.current) return;
+		if (!debugBar.current) {
+			debugBar.current = document.createElement('div');
+			debugBar.current.id = 'debugbar';
+			innerRef.current.appendChild(debugBar.current);
 		}
-	}, [loaderRef.current]);
+		innerRef.current.className = 'azchat-innerlist';
+	}, [loaderRef.current, innerRef.current]);
+
 	/* -------------------------------------------------------------------------- */
 	/*                keep the same distance to bottom of the list                */
 	/* -------------------------------------------------------------------------- */
-	React.useLayoutEffect(() => {
+	React.useEffect(() => {
+		keepBottomDistance();
+	}, [items, sizeCacheChanged]);
+
+	function keepBottomDistance(forceDist = null) {
 		if (!innerRef.current || !lastScroll.current || shouldStick) return;
+		const bottomDistThen = forceDist || lastBottomDistance.current;
 
 		//current distance to bottom of screen
 		const bottomDistNow = currentDistanceToBottom();
 
-		if (bottomDistNow === lastBottomDistance.current) return;
+		if (bottomDistNow === bottomDistThen) return;
 
 		//the scroll jumped by this much because of the layout shift
-		const jumpDistance = Math.abs(lastBottomDistance.current - bottomDistNow);
+		const jumpDistance = Math.abs(bottomDistThen - bottomDistNow);
 
 		//add the difference to scroll bar position so we get back to the last position
 		const newScrollpos = lastScroll.current.scrollOffset + jumpDistance;
@@ -197,26 +219,53 @@ export function ChatList(props: ChatListProps) {
 		//NEWPOS + NEW BOTTOM = TOTAL H
 		//NEW POS = TOTAL HEIGHT - BOTTOM
 
-		console.log('bottomDistThen', lastBottomDistance.current);
+		console.log('bottomDistThen', bottomDistThen);
 		console.log('bottomDistNow', bottomDistNow);
 		console.log('jumpDistance', jumpDistance);
 
-		console.log('OldScrollPos', lastScroll.current.scrollOffset);
-		console.log('newScrollpos', newScrollpos);
+		//
+		//console.log('OldScrollPos', lastScroll.current.scrollOffset);
+		//console.log('newScrollpos', newScrollpos);
 		//go to the last position
+		// console.log('LDB:', currentDistanceToBottom());
 		scrollTo(newScrollpos);
-	}, [items, sizeCacheChanged]);
 
-	function currentDistanceToBottom() {
-		return innerRef.current.offsetHeight - lastScroll.current.scrollOffset;
+		setTimeout(
+			(d) => {
+				const dbNow = currentDistanceToBottom();
+				if (dbNow != bottomDistThen) {
+					console.log('distance mismatch. try again!', dbNow, d);
+					//keepBottomDistance(d);
+				}
+			},
+			50,
+			bottomDistThen
+		);
 	}
 
-	// /* -------------------------------------------------------------------------- */
-	// /*                                refresh sizes                               */
-	// /* -------------------------------------------------------------------------- */
-	// React.useLayoutEffect(() => {
-	// 	//sizeHelper.current.reloadGrid();
-	// }, [itemCount]);
+	function currentDistanceToBottom() {
+		if (!innerRef.current || !outerRef.current) return 0;
+		return (
+			innerRef.current.offsetHeight -
+			lastScroll.current.scrollOffset -
+			outerRef.current.offsetHeight
+		);
+	}
+	function updateDistances() {
+		lastBottomDistance.current = currentDistanceToBottom();
+		const barpos = lastBottomDistance.current;
+		if (debugBar.current) {
+			if (Number(debugBar.current.getAttribute('lc')) <= 2) {
+				debugBar.current.setAttribute(
+					'style',
+					`border:2px solid red; position:absolute; width:99%; z-index:999; bottom:${Math.floor(
+						barpos
+					)}px`
+				);
+			} else console.log(lastBottomDistance.current);
+		}
+		// console.log('barpos:', barpos);
+	}
 
 	/* -------------------------------------------------------------------------- */
 	/*                         stick to bottom of the list                        */
@@ -234,6 +283,7 @@ export function ChatList(props: ChatListProps) {
 	/*                                   events                                   */
 	/* -------------------------------------------------------------------------- */
 	function _onScroll(e: ListOnScrollProps) {
+		if (!innerRef.current || !outerRef.current) return;
 		lastScroll.current = e;
 		const maxHeight = innerRef.current.offsetHeight;
 
@@ -250,8 +300,7 @@ export function ChatList(props: ChatListProps) {
 		const scrollHeight = e.scrollOffset + viewHeight;
 		const distToBottom = maxHeight - scrollHeight;
 
-		lastBottomDistance.current = currentDistanceToBottom();
-
+		updateDistances();
 		if ((e.scrollDirection == 'forward') == shouldStick) return;
 		//if we are very close to the end of the scroll list
 		//then stick to the end even if we get new items added to the list
@@ -267,62 +316,61 @@ export function ChatList(props: ChatListProps) {
 	}
 
 	return (
-		<AutoSizer>
-			{({ height, width }) => (
-				<InfiniteLoader
-					ref={loaderRef}
-					isItemLoaded={isItemLoaded}
-					threshold={1}
-					minimumBatchSize={loadBatchSize}
-					loadMoreItems={loadMoreItems}
-					itemCount={allItemsCount}
-				>
-					{({ onItemsRendered, ref }) => (
-						<List
-							innerRef={innerRef}
-							outerRef={outerRef}
-							onScroll={_onScroll}
-							itemData={{
-								...props,
-								getItem: getItem,
-								getActualIndex: getActualIndex,
-								isItemLoaded: isItemLoaded,
-								endIndex: endIndex.current,
-								sizeHelper: sizeHelper.current,
-							}}
-							//always start the scroll at bottom of the list
+		<>
+			<AutoSizer>
+				{({ height, width }) => (
+					<InfiniteLoader
+						ref={loaderRef}
+						isItemLoaded={isItemLoaded}
+						threshold={5}
+						minimumBatchSize={loadBatchSize}
+						loadMoreItems={loadMoreItems}
+						itemCount={allItemsCount}
+					>
+						{({ onItemsRendered, ref }) => (
+							<List
+								innerRef={innerRef}
+								outerRef={outerRef}
+								onScroll={_onScroll}
+								itemData={{
+									...props,
+									getItem: getItem,
+									getActualIndex: getActualIndex,
+									isItemLoaded: isItemLoaded,
+									endIndex: endIndex.current,
+									sizeHelper: sizeHelper.current,
+								}}
+								//always start the scroll at bottom of the list
 
-							ref={ref}
-							onItemsRendered={onItemsRendered}
-							height={height}
-							width={width}
-							itemCount={allItemsCount}
-							estimatedItemSize={DEFAULT_HEIGHT}
-							itemSize={getItemSize}
-						>
-							{RenderRow}
-						</List>
-					)}
-				</InfiniteLoader>
-			)}
-		</AutoSizer>
+								ref={ref}
+								onItemsRendered={onItemsRendered}
+								height={height}
+								width={width}
+								itemCount={allItemsCount}
+								estimatedItemSize={DEFAULT_HEIGHT}
+								itemSize={getItemSize}
+							>
+								{RenderRow}
+							</List>
+						)}
+					</InfiniteLoader>
+				)}
+			</AutoSizer>
+		</>
 	);
 }
-function SizeCalculator(props) {
-	const ref = React.useRef<any>();
-	const sh = props.data.sizeHelper as SizeHelper;
-	React.useEffect(() => {
-		sh.setSizeOf(props.index, ref.current.offsetHeight);
-	}, []);
-	return (
-		<div ref={ref} style={{ height: 'max-content' }} x-data-h={sh.getSizeOf(props.index)}>
-			{props.children}
-		</div>
-	);
-}
+
 function RenderRow(props: any) {
 	const data = props.data;
 	let content: any = null;
+	const sh = data.sizeHelper as SizeHelper;
+
+	const rowRef = React.useRef<any>();
+
+	React.useEffect(() => {
+		sh.setSizeOf(props.index, rowRef.current.getBoundingClientRect().height);
+	}, [sh, props.index, data.windowWidth]);
+
 	if (props.index === 0) {
 		if (data.endIndex && data.endIndex > 0) {
 			const HeaderItem = data.HeaderItem;
@@ -334,17 +382,12 @@ function RenderRow(props: any) {
 		/* --------------------- this item is loaded. render it --------------------- */
 		const ItemRender = data.ItemRender;
 		if (!ItemRender) return null;
-
 		const getItem = data.getItem;
-		content = (
-			<SizeCalculator {...props}>
-				<ItemRender index={props.index} item={getItem(props.index)} />
-			</SizeCalculator>
-		);
+		content = <ItemRender index={props.index} item={getItem(props.index)} />;
 	}
 	return (
 		<div key={props.index} style={props.style} x-data-rawindex={props.index}>
-			{content}
+			<div ref={rowRef}>{content}</div>
 		</div>
 	);
 }
