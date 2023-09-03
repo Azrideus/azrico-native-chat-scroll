@@ -1,7 +1,7 @@
 export * from './views/ChatList';
 
 import ChatList from './views/ChatList';
-import ExampleChatScroll from './example';
+import ExampleChatScroll from './example/example';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
