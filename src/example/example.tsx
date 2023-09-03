@@ -8,7 +8,7 @@ function makeMsg(index, date) {
 
 	return {
 		user: template.user,
-		text: 'yest',
+		text: template.text,
 		date: date,
 	};
 }

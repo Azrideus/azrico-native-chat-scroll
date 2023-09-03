@@ -1,5 +1,7 @@
 export class SizeHelper {
+	static BUFFER_HEIGHT = 40;
 	_cache;
+	_avgSize;
 	_relaodfunction;
 	_reloadPromise;
 	_isWaitingForReload = false;
@@ -13,8 +15,9 @@ export class SizeHelper {
 	setReloadFunction(val) {
 		this._relaodfunction = val;
 	}
-	setSizeOf(index, val) {
-		this._cache[index] = val;
+	setSizeOf(index, actualindex, val) {
+		this._cache[actualindex] = val;
+		this._avgSize = ((this._avgSize || val) + val) / 2;
 		this._relaodfunction(index);
 
 		// const needsReload = this._cache[index] == null;
@@ -24,15 +27,18 @@ export class SizeHelper {
 		// this.reloadGrid();
 		//}
 	}
+	getAverageSize() {
+		return this._avgSize || SizeHelper.BUFFER_HEIGHT;
+	}
+	getSizeOf(actualindex) {
+		return this._cache[actualindex];
+	}
+	clear(actualindex) {
+		delete this._cache[actualindex];
+	}
 
-	getSizeOf(index) {
-		// console.log('sizeof', index, 'is', this._cache[index]);
-		return this._cache[index];
-	}
-	clear(index) {
-		delete this._cache[index];
-	}
 	clearAll() {
+		this._avgSize = 0;
 		this._cache = {};
 	}
 }
