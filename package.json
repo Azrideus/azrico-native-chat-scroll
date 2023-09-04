@@ -1,5 +1,5 @@
 {
-	"name": "@azrico/chatscroller",
+	"name": "react-chatscroll",
 	"version": "1.0.0",
 	"main": "dist/index.js",
 	"description": "React Virtualized List for chat app layout",
