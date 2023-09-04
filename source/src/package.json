@@ -1,0 +1,25 @@
+{
+	"name": "@react-chatscroll/source",
+	"version": "1.0.0",
+	"main": "./src/index",
+	"description": "React Virtualized List for chat app layout",
+	"author": "Azrideus",
+	"homepage": ".",
+	"scripts": {},
+	"dependencies": {
+		"react": "^18.0.0",
+		"react-dom": "^18.0.0"
+	},
+	"browserslist": {
+		"production": [
+			">0.2%",
+			"not dead",
+			"not op_mini all"
+		],
+		"development": [
+			"last 1 chrome version",
+			"last 1 firefox version",
+			"last 1 safari version"
+		]
+	}
+}

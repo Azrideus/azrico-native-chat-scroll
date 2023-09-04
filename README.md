@@ -1,1 +1,2 @@
- 
+this project is still in early stage of developement
+readme will be updated soon...

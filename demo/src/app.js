@@ -1,5 +1,5 @@
 import React from 'react';
-import VirtualScroller from '../index';
+import VirtualScroller from 'react-chatscroll';
 import examplechats from './examplechats.json';
 
 const MAX_OLD_MESSAGES = 200;
@@ -13,12 +13,12 @@ function makeMsg(index, date) {
 	};
 }
 export function ExampleChatScroll() {
-	const [newItems, set_newItems] = React.useState<any[]>([]);
+	const [newItems, set_newItems] = React.useState([]);
 	const autoSend = React.useRef(true);
 	const msgNo = React.useRef(1);
 
 	const loadFunction = React.useCallback(async ({ skip, limit }) => {
-		return (await new Promise((resolve, reject) => {
+		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
 				if (skip > MAX_OLD_MESSAGES) {
 					return []; //nothing to load
@@ -32,7 +32,7 @@ export function ExampleChatScroll() {
 					})
 				);
 			}, Math.random() * 1000 + 500);
-		})) as any[];
+		});
 	}, []);
 
 	React.useEffect(() => {
