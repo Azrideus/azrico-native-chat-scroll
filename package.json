@@ -22,7 +22,7 @@
 		"@babel/preset-env": "^7.13.15",
 		"@babel/preset-typescript": "^7.14.5",
 		"@mui/material": "*",
-		"@types/react": "^18.0.25",
+		"@types/react": "^18.2.21",
 		"@types/react-dom": "^18.0.8",
 		"@types/react-virtualized-auto-sizer": "^1.0.1",
 		"@types/react-window": "^1.8.5",
@@ -31,8 +31,9 @@
 		"react-scripts": "^5.0.1",
 		"typescript": "^4.8.4"
 	},
-	"dependencies": {},
-	"peerDependencies": {},
+	"dependencies": {
+		"react": "^18.2.0"
+	},
 	"browserslist": {
 		"production": [
 			">0.2%",
