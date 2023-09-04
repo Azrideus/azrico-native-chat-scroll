@@ -1,5 +1,4 @@
 import '../styles/styles.css';
-import '../styles/anims.css';
 import React from 'react';
 import { useSize, currentDistanceToBottom, sizeResult } from '../classes/SizeHelper';
 
@@ -44,12 +43,13 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		return Object.entries(itemsMap).sort((a, b) => Number(b[0]) - Number(a[0]));
 	}, [itemsMap]);
 
-	/* -------------------------- check index of items -------------------------- */
+	/* ----------------------- newest item that is loaded ----------------------- */
 	const currentMinIndex = React.useMemo(() => {
 		if (itemEntries.length === 0) return -1;
 		return Math.min(...itemEntries.map((r) => Number(r[0])));
 	}, [itemEntries]);
 
+	/* ----------------------- oldest item that is loaded ----------------------- */
 	const currentMaxIndex = React.useMemo(() => {
 		if (itemEntries.length === 0) return -1;
 		return Math.max(...itemEntries.map((r) => Number(r[0])));
@@ -84,6 +84,8 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 					console.warn('already at the end of the list');
 					return;
 				}
+				//if we are adding items below our current items,
+				// make sure to not load more items than we actually have room for
 				batchSize = Math.min(batchSize, currentMinIndex);
 				startingIndex = Math.max(0, currentMinIndex - batchSize);
 			}
@@ -99,7 +101,7 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			lastLoadDirection.current = direction;
 			if (newItems.length < batchSize) {
 				//we loaded less items than expected.
-				//this can mean we have reached the end (top) of the list
+				//this can mean we have reached the top of the list
 				set_maxNumberOfItems(currentMaxIndex + newItems.length);
 			} else set_maxNumberOfItems(-1);
 
@@ -133,6 +135,7 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 							delmap[index] = true;
 						}
 					}
+					//these items will be deleted soon
 					set_deleteMap((s) => ({ ...s, ...delmap }));
 				}
 				set_itemsMap(newResult);
@@ -175,6 +178,8 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		if (lastLoadDirection.current == 0) return;
 		const keysToDelete = Object.keys(deleteMap);
 
+		//we wait a litte for the newly created items to calculate their heigts
+		//and for our scroller to update its scroll position based on the new items
 		setTimeout(() => {
 			if (keysToDelete.length > 0) {
 				set_deleteMap({});
@@ -206,6 +211,8 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			//when adding items to bottom of the list and we try to remove items from above the list
 			//there is no need to update scroll positions
 			if (lastLoadDirection.current == -1 && itemDelta < 0) return;
+
+			//
 			if (shouldStickToBottom) {
 				/* ---------------------- keep same distance to bottom ---------------------- */
 				const jumpDistance =
