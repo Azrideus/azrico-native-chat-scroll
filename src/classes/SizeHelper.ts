@@ -1,45 +1,48 @@
-export class SizeHelper {
-	static BUFFER_HEIGHT = 40;
-	_cache;
-	_avgSize;
-	_relaodfunction;
-	_reloadPromise;
-	_isWaitingForReload = false;
+import React from 'react';
 
-	_reloadStartingIndex = -1;
+export type sizeResult = { height: number; width: number };
+export function useSize(ref): sizeResult {
+	const [size, setSize] = React.useState<sizeResult>({
+		height: 0,
+		width: 0,
+	});
 
-	constructor(rldf: any = null) {
-		this.clearAll();
-		this.setReloadFunction(rldf);
-	}
-	setReloadFunction(val) {
-		this._relaodfunction = val;
-	}
-	setSizeOf(index, actualindex, val) {
-		this._cache[actualindex] = val;
-		this._avgSize = ((this._avgSize || val) + val) / 2;
-		this._relaodfunction(index);
+	const onResize = React.useCallback(() => {
+		if (!ref) {
+			return;
+		}
 
-		// const needsReload = this._cache[index] == null;
-		//if (needsReload) {
-		//if (this._reloadStartingIndex == -1 || this._reloadStartingIndex > index)
-		//	this._reloadStartingIndex = index;
-		// this.reloadGrid();
-		//}
-	}
-	getAverageSize() {
-		return this._avgSize || SizeHelper.BUFFER_HEIGHT;
-	}
-	getSizeOf(actualindex) {
-		return this._cache[actualindex];
-	}
-	clear(actualindex) {
-		delete this._cache[actualindex];
-	}
+		const newHeight = ref.current.offsetHeight;
+		const newWidth = ref.current.offsetWidth;
 
-	clearAll() {
-		this._avgSize = 0;
-		this._cache = {};
-	}
+		if (newHeight !== size.height || newWidth !== size.width) {
+			setSize({
+				height: newHeight,
+				width: newWidth,
+			});
+		}
+	}, [size.height, size.width]);
+
+	React.useLayoutEffect(() => {
+		if (!ref || !ref.current) {
+			return;
+		}
+
+		const resizeObserver = new ResizeObserver(onResize);
+		resizeObserver.observe(ref.current);
+
+		return () => resizeObserver.disconnect();
+	}, [ref.current, onResize]);
+
+	return size;
 }
-export default SizeHelper;
+
+/**
+ * retruns distance of bottom of screen to bottom of scroller
+ * @param inner
+ * @param outer
+ * @returns
+ */
+export function currentDistanceToBottom(inner: HTMLElement, outer: HTMLElement) {
+	return inner.offsetHeight - outer.scrollTop - outer.offsetHeight;
+}

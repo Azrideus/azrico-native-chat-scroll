@@ -1,8 +1,8 @@
-export * from '../views/ChatList';
 import React from 'react';
-
-import ChatList from '../views/ChatList';
+import VirtualScroller from '../index';
 import examplechats from './examplechats.json';
+
+const MAX_OLD_MESSAGES = 200;
 function makeMsg(index, date) {
 	const template = examplechats[index % examplechats.length];
 
@@ -20,8 +20,12 @@ export function ExampleChatScroll() {
 	const loadFunction = React.useCallback(async ({ skip, limit }) => {
 		return (await new Promise((resolve, reject) => {
 			setTimeout(() => {
-				//load max of 300 items
-				if (skip > 300) resolve([]);
+				if (skip > MAX_OLD_MESSAGES) {
+					return []; //nothing to load
+				}
+				if (skip + limit > MAX_OLD_MESSAGES) {
+					limit = Math.max(0, MAX_OLD_MESSAGES - skip);
+				}
 				resolve(
 					Array.from('0'.repeat(limit)).map((r, i) => {
 						return makeMsg(i, `${1 + i + skip} days ago`);
@@ -32,29 +36,30 @@ export function ExampleChatScroll() {
 	}, []);
 
 	React.useEffect(() => {
-		setInterval(() => {
-			if (autoSend.current) {
-				//set_newItems((s) => {
-				//	const newMsg = makeMsg(s.length + 1, `after ${msgNo.current} days`);
-				//	return [...s, newMsg];
-				//});
-				msgNo.current++;
-			}
-		}, 5000);
+		//setInterval(() => {
+		//	if (autoSend.current) {
+		//		//set_newItems((s) => {
+		//		//	const newMsg = makeMsg(s.length + 1, `after ${msgNo.current} days`);
+		//		//	return [...s, newMsg];
+		//		//});
+		//		msgNo.current++;
+		//	}
+		//}, 5000);
 	}, []);
 
 	return (
-		<ChatList
-			newItems={newItems}
+		<VirtualScroller
 			ItemRender={ItemRender}
-			HeaderItem={HeaderItem}
+			BottomContent={BottomContent}
+			TopContent={TopContent}
+			WrapperContent={LoadingArea}
 			loadFunction={loadFunction}
-			batchSize={30}
+			// batchSize={30}
 		/>
 	);
 }
 
-function HeaderItem(props) {
+function TopContent(props) {
 	const item = props.item;
 	return <div>nothing more to see</div>;
 }
@@ -67,6 +72,7 @@ function ItemRender(props) {
 			style={{
 				height: 'max-content',
 				padding: '5px',
+				maxWidth: '200px',
 			}}
 		>
 			<div
@@ -84,5 +90,12 @@ function ItemRender(props) {
 			</div>
 		</div>
 	);
+}
+
+function LoadingArea() {
+	return <div>Loading</div>;
+}
+function BottomContent() {
+	return <div>End of chat</div>;
 }
 export default ExampleChatScroll;

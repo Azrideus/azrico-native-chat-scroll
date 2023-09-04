@@ -1,4 +1,4 @@
-export * from './ChatList';
+export * from './VirtualScroller';
 
-import ChatList from './ChatList';
-export default ChatList;
+import VirtualScroller from './VirtualScroller';
+export default VirtualScroller;

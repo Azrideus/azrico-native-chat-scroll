@@ -1,0 +1,29 @@
+.azchat-innerlist {
+	position: relative;
+}
+.azchat-filler {
+	height: 100%;
+	width: 100%;
+}
+.azchat-virtualContainer {
+	overflow: auto;
+	width: 100%;
+}
+
+.azchat-virtualContainer ol {
+	padding: 0;
+	margin: 0;
+	list-style: none;
+	overflow: hidden;
+}
+
+.azchat-item {
+	min-height: 30px;
+}
+.azchat-wrapper {
+	background-color: gray;
+	height: calc(var(--WRAPPER_HEIGHT) * 1px);
+}
+.gone {
+	display: none;
+}

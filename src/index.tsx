@@ -1,13 +1,13 @@
-export * from './views/ChatList';
+export * from './views/VirtualScroller';
 
-import ChatList from './views/ChatList';
+import VirtualScroller from './views/VirtualScroller';
 import ExampleChatScroll from './example/example';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 /* -------------------------------------------------------------------------- */
 //
-export default ChatList;
+export default VirtualScroller;
 
 const testroot = document.getElementById('testroot');
 if (testroot) {
