@@ -1,15 +1,16 @@
 {
-	"name": "@react-chatscroll/source",
+	"name": "demo",
 	"version": "1.0.0",
 	"main": "./src/index",
-	"description": "React Virtualized List for chat app layout",
-	"author": "Azrideus",
 	"homepage": ".",
-	"scripts": {},
+	"scripts": {
+		"start": "react-app-rewired start"
+	},
 	"dependencies": {
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0"
 	},
+	"config-overrides-path": "../../config/config-overrides.js",
 	"browserslist": {
 		"production": [
 			">0.2%",

@@ -1,16 +1,12 @@
 {
-	"name": "@react-chatscroll/demo",
+	"name": "react-chatscroll",
 	"version": "1.0.0",
-	"main": "./src/index.js",
+	"main": "./src/index",
 	"description": "React Virtualized List for chat app layout",
 	"author": "Azrideus",
 	"homepage": ".",
-	"scripts": {
-		"start": "react-app-rewired start"
-	},
 	"dependencies": {
 		"react": "^18.0.0",
-		"react-chatscroll": "workspace:^",
 		"react-dom": "^18.0.0"
 	},
 	"browserslist": {

@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        // Ensure that .d.ts files are created by tsc, but not .js files
+        //"declaration": true,
+        //"emitDeclarationOnly": true,
+
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "lib": ["ES2020", "dom"],
+
+        "moduleResolution": "node",
+        "strict": true,
+        "skipLibCheck": true,
+        "noImplicitAny": false,
+        "sourceMap": true,
+        // "allowJs": true,
+        "target": "es2021",
+        "module": "es2020",
+        "jsx": "react-jsx"
+    },
+    "exclude": ["**/node_modules", "**/dist", "**/config"]
+}

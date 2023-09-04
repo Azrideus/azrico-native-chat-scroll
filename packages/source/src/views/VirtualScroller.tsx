@@ -12,7 +12,7 @@ type VirtualScrollerProps = {
 	WrapperContent?: React.ElementType<any>;
 	BottomContent?: React.ElementType<any>;
 	TopContent?: React.ElementType<any>;
-	loadFunction: ({ skip, limit }) => Promise<any[]>;
+	loadFunction: ({ skip, limit }) => Promise<any[]> | any[] | any;
 };
 /**
  * Advanced Virtual scrolling
