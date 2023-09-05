@@ -4,16 +4,18 @@ import { useSize, currentDistanceToBottom, sizeResult } from '../classes/SizeHel
 
 const WRAPPER_HEIGHT = 400;
 
-const DEFAULT_BATCH_SIZE = 30;
-const MAX_ITEMS = 100;
+const DEFAULT_BATCH_SIZE = 20;
+const MAX_ITEMS = 80;
 
 type VirtualScrollerProps = {
+	newItems?: any[];
 	ItemRender: React.ElementType<any>;
 	WrapperContent?: React.ElementType<any>;
 	BottomContent?: React.ElementType<any>;
 	TopContent?: React.ElementType<any>;
 	loadFunction: ({ skip, limit }) => Promise<any[]> | any[] | any;
 };
+
 /**
  * Advanced Virtual scrolling
  * @param props
@@ -30,18 +32,33 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	const distanceToTop = React.useRef<number>(0);
 
 	const lastItemCount = React.useRef<number>(0);
+	const lastNewItemCount = React.useRef<number>(0);
 
 	const loadingFlag = React.useRef<boolean>(false);
 
 	const [maxNumberOfItems, set_maxNumberOfItems] = React.useState<number>(0);
 	const [itemsMap, set_itemsMap] = React.useState<any>({});
 	const [deleteMap, set_deleteMap] = React.useState<any>({});
+
 	const [isAtBottom, set_isAtBottom] = React.useState<boolean>(true);
 	const [isAtTop, set_isAtTop] = React.useState<boolean>(false);
+	const [isSticky, set_isSticky] = React.useState<boolean>(false);
 
 	const itemEntries = React.useMemo(() => {
 		return Object.entries(itemsMap).sort((a, b) => Number(b[0]) - Number(a[0]));
 	}, [itemsMap]);
+
+	const newItemEntries = React.useMemo(() => {
+		const newItems = props.newItems || [];
+		console.log(newItems);
+		return newItems.map((r, i) => [i, r]);
+	}, [props.newItems]);
+
+	React.useEffect(() => {
+		/* ---------------------------- add the new items --------------------------- */
+
+		let startingIndex = -1;
+	}, [props.newItems]);
 
 	/* ----------------------- newest item that is loaded ----------------------- */
 	const currentMinIndex = React.useMemo(() => {
@@ -160,6 +177,7 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			outerRef.current as any
 		);
 		distanceToTop.current = (outerRef.current as any).scrollTop;
+		set_isSticky(distanceToBottom.current < 50);
 		checkShouldLoad();
 	}
 
@@ -202,7 +220,10 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		if (!outerRef.current || !innerRef.current) return;
 		if (lastLoadDirection.current == 0) return;
 
+		const isNewItemAdded = newItemEntries.length > lastNewItemCount.current;
 		const itemDelta = itemEntries.length - lastItemCount.current;
+
+		lastNewItemCount.current = newItemEntries.length;
 		lastItemCount.current = itemEntries.length;
 
 		if (itemDelta != 0) {
@@ -211,21 +232,28 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			//when adding items to bottom of the list and we try to remove items from above the list
 			//there is no need to update scroll positions
 			if (lastLoadDirection.current == -1 && itemDelta < 0) return;
-
-			//
 			if (shouldStickToBottom) {
-				/* ---------------------- keep same distance to bottom ---------------------- */
-				const jumpDistance =
-					currentDistanceToBottom(innerRef.current, outerRef.current) -
-					distanceToBottom.current;
-				const newScrollPosition = outerRef.current.scrollTop + jumpDistance;
-				outerRef.current.scrollTop = newScrollPosition;
+				stickToBottom();
 			} else {
-				/* ------------------------ keep same distance to top ----------------------- */
-				outerRef.current.scrollTop = distanceToTop.current;
+				stickToTop();
 			}
+		} else if (isNewItemAdded && isSticky) {
+			stickToBottom();
 		}
-	}, [itemsMap]);
+	}, [newItemEntries, itemEntries]);
+
+	function stickToBottom() {
+		/* ---------------------- keep same distance to bottom ---------------------- */
+		const jumpDistance =
+			currentDistanceToBottom(innerRef.current as any, outerRef.current as any) -
+			distanceToBottom.current;
+		const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
+		(outerRef.current as any).scrollTop = newScrollPosition;
+	}
+	function stickToTop() {
+		/* ------------------------ keep same distance to top ----------------------- */
+		(outerRef.current as any).scrollTop = distanceToTop.current;
+	}
 
 	/* -------------------------------------------------------------------------- */
 	/*                             render the scroller                            */
@@ -251,6 +279,9 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 				<ol>
 					{itemEntries.map((r, index) =>
 						RowRender({ ...props, key: r[0], item: r[1], index: index })
+					)}
+					{newItemEntries.map((r, index) =>
+						RowRender({ ...props, key: 'n' + r[0], item: r[1], index: index })
 					)}
 				</ol>
 

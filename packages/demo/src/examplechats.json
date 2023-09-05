@@ -1,50 +1,50 @@
 [
 	{
-		"user": "Carpenter Henderson",
-		"text": "Deserunt fugiat enim cupidatat labore laboris laborum qui culpa id mollit ut non deserunt. Anim adipisicing officia minim duis tempor."
+		"user": "me",
+		"text": "Im working on react-chatscroller project !"
 	},
 	{
-		"user": "Bond West",
-		"text": "Dolore commodo irure culpa pariatur. Laborum reprehenderit non culpa tempor nostrud ullamco dolore aliqua."
+		"user": "James bond",
+		"text": "Nothing really, what about you?"
 	},
 	{
-		"user": "Erickson Simon",
-		"text": "Eu ex in sunt sunt mollit. Pariatur eu consectetur nisi laboris laborum do magna voluptate mollit sint fugiat."
+		"user": "me",
+		"text": "Hello, how are you doing?"
 	},
 	{
-		"user": "Bridges Hartman",
-		"text": "Consectetur est non reprehenderit ut fugiat id laborum culpa elit reprehenderit. Dolor exercitation reprehenderit dolor laboris sunt excepteur ea aute laborum."
+		"user": "Watson",
+		"text": "Yes! I love your movies!"
 	},
 	{
-		"user": "Thompson Rhodes",
-		"text": "Lorem laborum pariatur et id nulla deserunt amet consectetur esse pariatur nulla esse. Ullamco velit elit irure nulla minim est."
+		"user": "James bond",
+		"text": "Have you seen my movies?"
 	},
 	{
-		"user": "Ratliff Terrell",
-		"text": "Aliqua do laborum reprehenderit Lorem occaecat commodo commodo anim. Duis elit qui ipsum aute velit sit officia quis aliqua ipsum proident laboris laboris."
+		"user": "James bond",
+		"text": "hello. my name is bond. james bond"
 	},
 	{
-		"user": "Carpenter Henderson",
-		"text": "Deserunt fugiat enim cupidatat labore laboris laborum qui culpa id mollit ut non deserunt. Anim adipisicing officia minim duis tempor."
+		"user": "Watson",
+		"text": "Good morning"
 	},
 	{
-		"user": "Bond West",
-		"text": "Dolore commodo irure culpa pariatur. Laborum reprehenderit non culpa tempor nostrud ullamco dolore aliqua."
+		"user": "Watson",
+		"text": "Are you there?"
 	},
 	{
-		"user": "Erickson Simon",
-		"text": "Eu ex in sunt sunt mollit. Pariatur eu consectetur nisi laboris laborum do magna voluptate mollit sint fugiat."
+		"user": "Watson",
+		"text": "Hey"
 	},
 	{
-		"user": "Bridges Hartman",
-		"text": "Consectetur est non reprehenderit ut fugiat id laborum culpa elit reprehenderit. Dolor exercitation reprehenderit dolor laboris sunt excepteur ea aute laborum."
+		"user": "Ashley",
+		"text": "Hey"
 	},
 	{
-		"user": "Thompson Rhodes",
-		"text": "Lorem laborum pariatur et id nulla deserunt amet consectetur esse pariatur nulla esse. Ullamco velit elit irure nulla minim est."
+		"user": "Ashley",
+		"text": "I love The Shawshank Redemption too!"
 	},
 	{
-		"user": "Ratliff Terrell",
-		"text": "Aliqua do laborum reprehenderit Lorem occaecat commodo commodo anim. Duis elit qui ipsum aute velit sit officia quis aliqua ipsum proident laboris laboris."
+		"user": "fred",
+		"text": "here are my favorite movies: \n1.The Shawshank Redemption \n2.The Godfather \n3.The Godfather: Part II"
 	}
 ]

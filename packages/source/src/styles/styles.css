@@ -5,6 +5,9 @@
 	height: 100%;
 	width: 100%;
 }
+.azchat-flexed {
+	flex: 1;
+}
 .azchat-virtualContainer {
 	overflow: auto;
 	width: 100%;
