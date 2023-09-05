@@ -6,6 +6,7 @@ const MAX_OLD_MESSAGES = 200;
 function makeMsg(index, date) {
 	if (typeof index === 'number') {
 		const template = examplechats[index % examplechats.length];
+
 		return {
 			user: template.user,
 			text: template.text,
@@ -19,39 +20,34 @@ function makeMsg(index, date) {
 		};
 	}
 }
+
+const itemsInDB = Array.from('0'.repeat(MAX_OLD_MESSAGES))
+	.map((r, i) => {
+		const dateNow = new Date();
+		dateNow.setTime(dateNow.getTime() - (i * 10 + Math.random() * 5) * 1000);
+		return makeMsg(i, dateNow);
+	})
+	.sort((a, b) => a.date - b.date);
+
+async function loadItemsFromDB(props: any): Promise<any[]> {
+	const { skip, limit, date } = props;
+	return await new Promise((resolve, reject) => {
+		setTimeout(() => {
+			const itemsAfterDate =
+				date instanceof Date
+					? itemsInDB.filter((s) => (s.date as Date).getTime() > date.getTime())
+					: itemsInDB;
+			//apply the skip and limit rules:
+			const res = itemsAfterDate.slice(skip, skip + limit);
+
+			resolve(res);
+		}, Math.random() * 1000 + 500);
+	});
+}
+
 export function ExampleChatScroll() {
 	const [newItems, set_newItems] = React.useState<any[]>([]);
 	const [message, set_message] = React.useState('');
-	const msgNo = React.useRef(1);
-
-	const loadFunction = React.useCallback(async ({ skip, limit }) => {
-		return await new Promise((resolve, reject) => {
-			setTimeout(() => {
-				if (skip > MAX_OLD_MESSAGES) {
-					return []; //nothing to load
-				}
-				if (skip + limit > MAX_OLD_MESSAGES) {
-					limit = Math.max(0, MAX_OLD_MESSAGES - skip);
-				}
-				resolve(
-					Array.from('0'.repeat(limit)).map((r, i) => {
-						const msgIndex = 1 + i + skip;
-						return makeMsg(msgIndex, `${msgIndex} hours ago`);
-					})
-				);
-			}, Math.random() * 1000 + 500);
-		});
-	}, []);
-
-	React.useEffect(() => {
-		setInterval(() => {
-			set_newItems((s) => {
-				return [...s, { user: 'Ray', text: 'hey', date: new Date() }];
-			});
-			msgNo.current++;
-		}, 5000);
-	}, []);
-
 	function handleChatSubmit(e) {
 		e.preventDefault();
 		const newMsg = makeMsg(message, new Date());
@@ -99,7 +95,7 @@ export function ExampleChatScroll() {
 						BottomContent={BottomContent}
 						TopContent={TopContent}
 						WrapperContent={LoadingArea}
-						loadFunction={loadFunction}
+						loadFunction={loadItemsFromDB}
 						// batchSize={30}
 					/>
 				</div>
@@ -132,7 +128,7 @@ function TopContent(props) {
 }
 function ItemRender(props) {
 	const item = props.item;
-	const index = props.index;
+	if (!item) return <div>item</div>;
 
 	const isByMe = item.user === 'me';
 
