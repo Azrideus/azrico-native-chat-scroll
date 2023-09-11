@@ -42,12 +42,15 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	/* -------------------------------------------------------------------------- */
 	/*                         load new items when needed                         */
 	/* -------------------------------------------------------------------------- */
+	React.useLayoutEffect(() => {
+		chatManager.set_loadFunction(props.loadFunction);
+		chatManager.set_setItemsFunction((r) => set_currentItems(r));
+	}, []);
 	async function loadItems(direction = 0) {
 		if (loadingFlag.current) return;
 		try {
 			loadingFlag.current = true;
-			chatManager.set_loadFunction(props.loadFunction);
-			chatManager.set_setItemsFunction(set_currentItems);
+
 			await chatManager.load_items(direction);
 		} finally {
 			loadingFlag.current = false;
@@ -78,9 +81,9 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	/* ------------------ load if reaching end or start of page ----------------- */
 	function checkShouldLoad() {
 		if (loadingFlag.current) return;
-		if (!chatManager.isAtTop && distanceToTop.current < WRAPPER_HEIGHT) {
+		if (distanceToTop.current < WRAPPER_HEIGHT && !chatManager.isAtTop) {
 			loadItems(1);
-		} else if (!chatManager.isAtBottom && distanceToBottom.current < WRAPPER_HEIGHT) {
+		} else if (distanceToBottom.current < WRAPPER_HEIGHT && !chatManager.isAtBottom) {
 			loadItems(-1);
 		}
 	}
@@ -112,22 +115,25 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	/* -------------------------------------------------------------------------- */
 	React.useLayoutEffect(() => {
 		if (!outerRef.current || !innerRef.current) return;
-		if (chatManager.lastLoadDirection) return;
+		const itemDelta = chatManager.lastCountChange;
+		const isAdding = itemDelta > 0;
 
-		const itemDelta = chatManager.lastDelta;
+		if (itemDelta === 0 || chatManager.lastLoadDirection === LoadDirection.NONE) return;
 
-		if (itemDelta != 0) {
-			const shouldStickToBottom =
-				(chatManager.lastLoadDirection == LoadDirection.UP) == itemDelta > 0;
+		const shouldStickToBottom =
+			(chatManager.lastLoadDirection === LoadDirection.DOWN && isSticky && isAdding) ||
+			(chatManager.lastLoadDirection === LoadDirection.UP) == isAdding;
 
-			//when adding items to bottom of the list and we try to remove items from above the list
-			//there is no need to update scroll positions
-			if (chatManager.lastLoadDirection == LoadDirection.DOWN && itemDelta < 0) return;
-			if (shouldStickToBottom) {
-				stickToBottom();
-			} else {
-				stickToTop();
-			}
+		//when adding items to bottom of the list and we try to remove items from above the list
+		//there is no need to update scroll positions
+		if (chatManager.lastLoadDirection === LoadDirection.DOWN && itemDelta > 0) return;
+
+		//console.log('stick to bottom:', chatManager.lastLoadDirection, itemDelta);
+		//console.log('stick to bottom:', shouldStickToBottom);
+		if (shouldStickToBottom) {
+			stickToBottom();
+		} else {
+			stickToTop();
 		}
 	}, [currentItems]);
 

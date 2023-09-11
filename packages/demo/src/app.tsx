@@ -24,22 +24,25 @@ function makeMsg(index, date) {
 const itemsInDB = Array.from('0'.repeat(MAX_OLD_MESSAGES))
 	.map((r, i) => {
 		const dateNow = new Date();
-		dateNow.setTime(dateNow.getTime() - (i * 10 + Math.random() * 5) * 1000);
+		//each message gets older and older...
+		dateNow.setTime(dateNow.getTime() - i * 60 * 1000);
 		return makeMsg(i, dateNow);
 	})
-	.sort((a, b) => a.date - b.date);
+	.sort((a, b) => b.date - a.date);
 
 async function loadItemsFromDB(props: any): Promise<any[]> {
 	const { skip, limit, date } = props;
 	return await new Promise((resolve, reject) => {
+		console.log('load', skip, limit, date);
 		setTimeout(() => {
 			const itemsAfterDate =
 				date instanceof Date
-					? itemsInDB.filter((s) => (s.date as Date).getTime() > date.getTime())
+					? itemsInDB.filter((s) => (s.date as Date).getTime() < date.getTime())
 					: itemsInDB;
 			//apply the skip and limit rules:
 			const res = itemsAfterDate.slice(skip, skip + limit);
-
+			console.log('dsl', itemsAfterDate.length, skip, limit);
+			console.log('loaded', res.length, 'items from db');
 			resolve(res);
 		}, Math.random() * 1000 + 500);
 	});
@@ -163,9 +166,7 @@ function ItemRender(props) {
 
 function formatDate(inputDate) {
 	if (inputDate instanceof Date) {
-		return (
-			inputDate.getHours() + ':' + inputDate.getMinutes() + ':' + inputDate.getSeconds()
-		);
+		return inputDate.getHours() + ':' + inputDate.getMinutes();
 	}
 	return inputDate;
 }

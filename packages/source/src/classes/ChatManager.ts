@@ -8,9 +8,9 @@ const MAX_LOAD = 80;
 const BATCH_SIZE = 30;
 
 export enum LoadDirection {
-	UP = 1,
 	DOWN = -1,
 	NONE = 0,
+	UP = 1,
 }
 
 export type SearchQuery = {
@@ -26,15 +26,24 @@ export class ChatManager {
 	currentItems: ChatItem[];
 	currentPage = 0;
 
-	#loadFunction?: LoadFunctionType;
-	#setItemsFunction?: SetItemsFunctionType;
 	#lastLoadDirection: LoadDirection;
-	#lastDelta: number = 0;
-	#lastCount: number = 0;
+	#lastCountChange: number = 0;
+
+	private setItemsFunction?: SetItemsFunctionType;
+
+	private loadFunction?: LoadFunctionType;
+	private lastCount: number = 0;
 
 	//date of newest message
 	//this helps in pagination
-	dayZeroDate?: Date;
+	private dayZeroDate?: number;
+	private loadedOldestDate?: number;
+	private loadedNewestDate?: number;
+
+	private loadedLargestIndex: number = -1;
+	private loadedSmallestIndex: number = 0;
+
+	#isAtBottom?: boolean;
 
 	constructor() {
 		this.currentItems = [];
@@ -43,10 +52,10 @@ export class ChatManager {
 	}
 
 	set_loadFunction(fnc: LoadFunctionType) {
-		this.#loadFunction = fnc;
+		this.loadFunction = fnc;
 	}
 	set_setItemsFunction(fnc: SetItemsFunctionType) {
-		this.#setItemsFunction = fnc;
+		this.setItemsFunction = fnc;
 	}
 
 	/**
@@ -54,62 +63,114 @@ export class ChatManager {
 	 * @param direction
 	 */
 	async load_items(direction: LoadDirection = LoadDirection.UP) {
-		if (!this.#loadFunction) return;
+		if (!this.loadFunction) return;
 
-		console.log('load more:', direction);
 		const search_query: SearchQuery = {
-			skip: 0,
+			skip: this.loadedLargestIndex + 1,
 			limit: BATCH_SIZE,
-			date: this.dayZeroDate,
+			date: this.dayZeroDate ? new Date(this.dayZeroDate) : undefined,
 		};
-		console.log('sq:', search_query);
-
 		this.#lastLoadDirection = direction;
-		const loaded_items = await this.#loadFunction(search_query);
+		const loaded_items = await this.loadFunction(search_query);
 
-		const loaded_chats = loaded_items.map((r) => new ChatItem(r));
-		this.add_items_to_list(loaded_chats, direction);
+		//first we copy the items into temp_chats so we can sort them and then assign their indexes
+		const temp_chats = loaded_items
+			.map((r, i) => new ChatItem(-1, r))
+			.sort((a, b) => a._created_time - b._created_time);
+
+		const final_chats = temp_chats
+			.reverse()
+			.map((r, i) => new ChatItem(this.loadedLargestIndex + i + 1, r))
+			.reverse();
+		this.add_items_to_list(final_chats, direction);
 	}
 
+	private remove_items(count: number, direction: LoadDirection = LoadDirection.UP) {
+		let resultItems = [...this.currentItems];
+		count = Math.min(Math.abs(count), resultItems.length);
+		//
+		if (direction === LoadDirection.UP) {
+			//remove from top
+			resultItems.splice(0, count);
+		} else if (direction === LoadDirection.DOWN) {
+			const rmStartIndex = Math.max(resultItems.length - count, 0);
+			resultItems.splice(rmStartIndex);
+		}
+		this.setItems(resultItems);
+	}
 	private add_items_to_list(
 		items: ChatItem[],
 		direction: LoadDirection = LoadDirection.UP
 	) {
 		if (items.length === 0) return; //nothing is added
 
-		if (this.currentItems.length === 0) {
-			//first time loading items
-			//find the newest date so we can use it as reference
-			this.dayZeroDate = new Date(Math.max(...items.map((r) => r._created_time)));
-			console.log('dayZeroDate:', this.dayZeroDate);
-		}
+		const nextItems = [...this.currentItems];
+
 		if (direction === LoadDirection.UP) {
 			//add above the list
-			this.currentItems.unshift(...items);
+			nextItems.unshift(...items);
 		} else {
 			//add below the list
-			this.currentItems.push(...items);
+			nextItems.push(...items);
 		}
 
-		this.#lastDelta = this.currentItems.length - this.#lastCount;
-		this.#lastCount = this.currentItems.length;
+		this.setItems(nextItems);
+		if (this.currentItems.length > MAX_LOAD) {
+			const countToRemove = MAX_LOAD - this.currentItems.length;
+			const dirToRemove = direction * -1;
+			setTimeout(
+				(selfRef) => {
+					selfRef.remove_items(countToRemove, dirToRemove);
+				},
+				400,
+				this
+			);
+		}
+	}
+	setItems(items: ChatItem[]) {
+		this.currentItems = items;
+		this.#lastCountChange = this.currentItems.length - this.lastCount;
+		const isAdding = this.#lastCountChange > 0;
 
-		if (this.#setItemsFunction) this.#setItemsFunction(this.currentItems);
+		this.lastCount = this.currentItems.length;
+
+		const timeMap = this.currentItems.map((r) => r._created_time);
+		const indexMap = this.currentItems.map((r) => r.index);
+
+		/* --------------------- information about current data --------------------- */
+		this.loadedOldestDate = Math.min(...timeMap);
+		this.loadedNewestDate = Math.max(...timeMap);
+		this.loadedLargestIndex = Math.max(...indexMap);
+		this.loadedSmallestIndex = Math.min(...indexMap);
+		/* -------------------------------------------------------------------------- */
+		//
+		if (!this.dayZeroDate && this.loadedNewestDate > 0) {
+			//first time loading items
+			//find the newest date so we can use it as reference
+			this.dayZeroDate = this.loadedNewestDate;
+		}
+		this.#isAtBottom = !this.dayZeroDate || this.loadedNewestDate >= this.dayZeroDate;
+		//console.log('dayZeroDate', this.#dayZeroDate);
+		//console.log('loadedNewestDate', this.#loadedNewestDate);
+		//console.log('diff', this.#loadedNewestDate - (this.#dayZeroDate || 0));
+		//console.log('isAtBottom', this.#isAtBottom);
+		console.log('set items:', this.currentItems);
+		if (this.setItemsFunction) this.setItemsFunction(this.currentItems);
 	}
 	/* --------------------------------- getters -------------------------------- */
-
-	/* number of changed items in the last load */
-	get lastDelta() {
-		return this.#lastDelta;
-	}
-	get lastLoadDirection(): LoadDirection {
-		return this.#lastLoadDirection as LoadDirection;
-	}
 	get isAtTop() {
 		return false;
 	}
 	get isAtBottom() {
-		return true;
+		return this.#isAtBottom;
+	}
+
+	/* number of changed items in the last load */
+	get lastCountChange() {
+		return this.#lastCountChange;
+	}
+	get lastLoadDirection(): LoadDirection {
+		return this.#lastLoadDirection as LoadDirection;
 	}
 }
 export default ChatManager;

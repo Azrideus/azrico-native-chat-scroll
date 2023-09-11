@@ -2,22 +2,36 @@ import { UIDHelper } from './UIDHelper';
 
 export class ChatItem {
 	readonly key: string;
+	readonly index: number;
 	readonly data: any;
 	readonly _created_date: Date;
 	readonly _created_time: number;
 
-	constructor(data: any);
-	constructor(data: any, key: string);
+	constructor(ind: number, data: any);
+	constructor(ind: number, data: any, key: string);
 
-	constructor(d: any, k?: string) {
-		this.key = String(k || UIDHelper.nextid());
-		this.data = d;
-		/* -------------------------------------------------------------------------- */
-		if (this.data) {
-			this._created_date = this.data.date || this.data._created_date;
+	constructor(ind: number, d: any, k?: string) {
+		this.index = ind;
+
+		if (d && d instanceof ChatItem) {
+			this.key = d.key;
+			this.data = d.data;
+			this._created_date = d._created_date;
 		} else {
-			this._created_date = new Date();
+			this.key = String(k || UIDHelper.nextid());
+			this.data = d;
+			this._created_date = ChatItem.getObjectDate(this.data);
 		}
+
 		this._created_time = this._created_date.getTime();
+	}
+	static getObjectDate(inp) {
+		let controlObject = inp;
+		if (controlObject)
+			try {
+				return new Date(controlObject.date || controlObject._created_date);
+			} catch {}
+
+		return new Date();
 	}
 }
