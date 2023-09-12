@@ -24,7 +24,7 @@
 	min-height: 30px;
 }
 .azchat-wrapper {
-	background-color: gray;
+	background-color: transparent;
 	height: calc(var(--WRAPPER_HEIGHT) * 1px);
 }
 .gone {

@@ -2,7 +2,7 @@ import { ChatItem } from './ChatItem';
 import { UIDHelper } from './UIDHelper';
 
 //max number of items we keep in cache
-const MAX_LOAD = 80;
+const MAX_LOAD = 70;
 
 //items we load in each batch
 const BATCH_SIZE = 30;
@@ -36,6 +36,8 @@ export class ChatManager {
 	#lastOperation: ChangeOperation = ChangeOperation.NONE;
 	#lastCountChange: number = 0;
 
+	private currentLoadOperation?: any;
+
 	private setItemsFunction?: SetItemsFunctionType;
 
 	private loadFunction?: LoadFunctionType;
@@ -45,8 +47,6 @@ export class ChatManager {
 	//date of newest message
 	//this helps in pagination
 	private dayZeroDate?: number;
-	private loadedOldestDate?: number;
-	private loadedNewestDate?: number;
 	private idOfFirstMessage?: any;
 
 	#isAtBottom?: boolean;
@@ -64,11 +64,17 @@ export class ChatManager {
 		this.setItemsFunction = fnc;
 	}
 
+	async loadNextItems(direction: LoadDirection = LoadDirection.UP) {
+		//wait for the previous load to finish
+		if (this.currentLoadOperation != null) await this.currentLoadOperation;
+		this.currentLoadOperation = this.load_items(direction);
+		return await this.currentLoadOperation;
+	}
 	/**
 	 * load more items in the given direction
 	 * @param direction
 	 */
-	async load_items(direction: LoadDirection = LoadDirection.UP) {
+	private async load_items(direction: LoadDirection = LoadDirection.UP) {
 		if (!this.loadFunction) return;
 
 		const search_query: SearchQuery = {
@@ -88,25 +94,30 @@ export class ChatManager {
 		}
 
 		this.#lastLoadDirection = direction;
+		//
+
 		const loaded_items = await this.loadFunction(search_query);
+		//
 		this.lastDBLoad = loaded_items.length;
 
-		const startingIndex = this.topMessageIndex;
-		const final_chats = loaded_items
+		/* ------------------------ convert items to ChatItem ----------------------- */
+		let final_chats = loaded_items
 			.map((r, i) => new ChatItem(r))
-			//first sort in inverse so we can assign Indexes correctly
-			.sort((a, b) => b._created_time - a._created_time)
-			.map((r, i) => {
-				r.index = startingIndex + i + 1;
-				return r;
-			})
-			//then reverse and add
-			.reverse();
+			/* -------- first sort in inverse so we can assign Indexes correctly -------- */
+			.sort((a, b) => b._created_time - a._created_time);
 
-		this.add_items_to_list(final_chats, direction);
+		/* ------------------------------ apply indexes ----------------------------- */
+		const startingIndex = search_query.skip;
+		final_chats = final_chats.map((r, i) => {
+			r.index = startingIndex + i;
+			return r;
+		});
+		/* -------------------- then reverse and add to the list -------------------- */
+		final_chats = final_chats.reverse();
+		await this.add_items_to_list(final_chats, direction);
 	}
 
-	private remove_items(count: number, direction: LoadDirection = LoadDirection.UP) {
+	private async remove_items(count: number, direction: LoadDirection = LoadDirection.UP) {
 		try {
 			if (count === 0 || direction === LoadDirection.NONE) return;
 			this.#lastChangeDirection = direction;
@@ -124,11 +135,10 @@ export class ChatManager {
 			}
 			this.setItems(resultItems);
 		} finally {
-			this.check_if_bottom();
-			this.check_if_top();
+			this.check_position();
 		}
 	}
-	private add_items_to_list(
+	private async add_items_to_list(
 		items: ChatItem[],
 		direction: LoadDirection = LoadDirection.UP
 	) {
@@ -146,22 +156,22 @@ export class ChatManager {
 				//add below the list
 				nextItems.push(...items);
 			}
-
 			this.setItems(nextItems);
 			if (this.currentItems.length > MAX_LOAD) {
 				const countToRemove = MAX_LOAD - this.currentItems.length;
 				const dirToRemove = direction * -1;
-				setTimeout(
-					(selfRef) => {
-						selfRef.remove_items(countToRemove, dirToRemove);
-					},
-					500,
-					this
-				);
+				await new Promise((resolve) => {
+					setTimeout(
+						(selfRef) => {
+							selfRef.remove_items(countToRemove, dirToRemove).then(resolve);
+						},
+						200,
+						this
+					);
+				});
 			}
 		} finally {
-			this.check_if_bottom();
-			this.check_if_top();
+			this.check_position();
 		}
 	}
 	private setItems(items: ChatItem[]) {
@@ -175,46 +185,41 @@ export class ChatManager {
 		//console.log('loadedNewestDate', this.#loadedNewestDate);
 		//console.log('diff', this.#loadedNewestDate - (this.#dayZeroDate || 0));
 		//console.log('isAtBottom', this.#isAtBottom);
-		console.log('set items:', this.currentItems);
+		//console.log('set items:', this.currentItems);
 		if (this.setItemsFunction) this.setItemsFunction(this.currentItems);
 	}
 
 	private update_values() {
-		const timeMap = this.currentItems.map((r) => r._created_time);
-		const indexMap = this.currentItems.map((r) => r.index);
-
-		/* --------------------- information about current data --------------------- */
-		this.loadedOldestDate = Math.min(...timeMap);
-		this.loadedNewestDate = Math.max(...timeMap);
-		/* -------------------------------------------------------------------------- */
-
-		if (!this.dayZeroDate && this.loadedNewestDate > 0) {
+		if (!this.dayZeroDate && this.bottomMessageDate && this.bottomMessageDate > 0) {
 			//first time loading items
 			//find the newest date so we can use it as reference
-			this.dayZeroDate = this.loadedNewestDate;
+			this.dayZeroDate = this.bottomMessageDate;
 		}
 	}
 
 	/**
 	 * check if we reached the bottom of the list
 	 */
-	private check_if_bottom() {
+	private check_position() {
 		this.#isAtBottom =
 			!this.dayZeroDate ||
-			!this.loadedNewestDate ||
-			this.loadedNewestDate >= this.dayZeroDate;
-	}
-	/**
-	 * check if we have reached top of the list
-	 */
-	private check_if_top() {
+			!this.bottomMessageDate ||
+			this.bottomMessageDate >= this.dayZeroDate;
+
 		//if we load fewer items than the limit, it means we have reached the top of the chat
 		if (this.lastLoadDirection === LoadDirection.UP && this.lastDBLoad < BATCH_SIZE) {
 			this.idOfFirstMessage = this.topMessage?.itemid;
 		}
 		this.#isAtTop = this.topMessage && this.topMessage.itemid === this.idOfFirstMessage;
 	}
+
 	/* --------------------------------- getters -------------------------------- */
+	get topMessageDate(): number | undefined {
+		return this.topMessage?._created_time ?? undefined;
+	}
+	get bottomMessageDate(): number | undefined {
+		return this.bottomMessage?._created_time ?? undefined;
+	}
 	get topMessageIndex(): number {
 		return this.topMessage?.index ?? -1;
 	}

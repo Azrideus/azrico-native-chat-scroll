@@ -1,42 +1,23 @@
 import React from 'react';
 import VirtualScroller from 'react-chatscroll';
 import examplechats from './examplechats.json';
- 
-const MAX_OLD_MESSAGES = 100;
+  
 let newMessageId = 0;
-function makeMsg(index, date) {
-	if (typeof index === 'number') {
-		const template = examplechats[index % examplechats.length];
 
-		return {
-			_id: index,
-			user: template.user,
-			text: template.text,
-			date: date,
-		};
-	} else {
-		return {
-			_id: 'newmsg-' + newMessageId++,
-			user: 'me',
-			text: index,
-			date: date,
-		};
-	}
-}
-
-const itemsInDB = Array.from('0'.repeat(MAX_OLD_MESSAGES))
+const itemsInDB = examplechats
 	.map((r, i) => {
-		const dateNow = new Date();
-		//each message gets older and older...
-		dateNow.setTime(dateNow.getTime() - i * 60 * 1000);
-		return makeMsg(i, dateNow);
+		return {
+			_id: i,
+			user: r['User Name'],
+			text: r['Content'],
+			date: new Date(r['Date']),
+			...r,
+		};
 	})
-	.sort((a, b) => b.date - a.date);
-
+	.sort((a, b) => b.date.getTime() - a.date.getTime());
 async function loadItemsFromDB(props: any): Promise<any[]> {
 	const { skip, limit, date } = props;
 	return await new Promise((resolve, reject) => {
-		console.log('load', skip, limit, date);
 		setTimeout(() => {
 			const itemsBeforeDate =
 				date instanceof Date
@@ -54,11 +35,11 @@ export function ExampleChatScroll() {
 	const [newItems, set_newItems] = React.useState<any[]>([]);
 	const [message, set_message] = React.useState('');
 	function handleChatSubmit(e) {
-		e.preventDefault();
-		const newMsg = makeMsg(message, new Date());
-		set_newItems((s) => [...s, newMsg]);
-		set_message('');
-		return false;
+		//e.preventDefault();
+		//const newMsg = makeMsg(message, new Date());
+		//set_newItems((s) => [...s, newMsg]);
+		//set_message('');
+		//return false;
 	}
 	return (
 		<div
@@ -129,7 +110,7 @@ export function ExampleChatScroll() {
 
 function TopContent(props) {
 	const item = props.item;
-	return <div>nothing more to see</div>;
+	return <div>You have reached the top of the list</div>;
 }
 function ItemRender(props) {
 	const item = props.item;
@@ -158,7 +139,13 @@ function ItemRender(props) {
 					padding: '5px',
 				}}
 			>
-				<b>{item.user}</b>
+				<div
+					style={{ display: 'flex', flexDirection: 'row', gap: 5, alignItems: 'center' }}
+				>
+					<img src={item['Avatar URL']} style={{ height: 32, width: 32 }}></img>
+					<b>{item.user}</b>
+				</div>
+
 				<p style={{ whiteSpace: 'pre-line' }}>{item.text}</p>
 				<p>{formatDate(item.date)}</p>
 			</div>

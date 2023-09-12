@@ -9,6 +9,7 @@ import ChatManager, {
 } from '../classes/ChatManager';
 
 const WRAPPER_HEIGHT = 400;
+const WRAPPER_BUFFER_HEIGHT = 900;
 
 const DEFAULT_BATCH_SIZE = 20;
 const MAX_ITEMS = 80;
@@ -54,8 +55,7 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		if (loadingFlag.current) return;
 		try {
 			loadingFlag.current = true;
-
-			await chatManager.load_items(direction);
+			await chatManager.loadNextItems(direction);
 		} finally {
 			loadingFlag.current = false;
 		}
@@ -88,9 +88,12 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	/* ------------------ load if reaching end or start of page ----------------- */
 	function checkShouldLoad() {
 		if (loadingFlag.current) return;
-		if (distanceToTop.current < WRAPPER_HEIGHT && !chatManager.isAtTop) {
+		if (distanceToTop.current < WRAPPER_BUFFER_HEIGHT && !chatManager.isAtTop) {
 			loadItems(1);
-		} else if (distanceToBottom.current < WRAPPER_HEIGHT && !chatManager.isAtBottom) {
+		} else if (
+			distanceToBottom.current < WRAPPER_BUFFER_HEIGHT &&
+			!chatManager.isAtBottom
+		) {
 			loadItems(-1);
 		}
 	}
@@ -135,10 +138,8 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		let _stickToBot = false;
 		if (lastOp === ChangeOperation.ADD) {
 			if (lld === LoadDirection.DOWN) {
-				if (isSticky)
-					if (itemDelta > 5) {
-						//sticky is broken. no need to do anything
-					} else _stickToBot = true; //sticky to bottom of the list
+				//if adding few items to bottom of the list we can stick to the bottom
+				if (isSticky && itemDelta < 5) _stickToBot = true;
 			} else if (lld === LoadDirection.UP) _stickToBot = true; //adding items to top, stick to bot
 		} else {
 			if (lcd === LoadDirection.DOWN) {
@@ -188,8 +189,8 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		>
 			<div ref={innerRef}>
 				{chatManager.isAtTop && props.TopContent && <props.TopContent />}
-				<div className={'azchat-wrapper' + (chatManager.isAtTop ? ' gone' : '')}>
-					{props.WrapperContent && <props.WrapperContent />}
+				<div className={'azchat-wrapper'}>
+					{!chatManager.isAtTop && props.WrapperContent && <props.WrapperContent />}
 				</div>
 
 				<ol>
