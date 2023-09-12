@@ -2,28 +2,28 @@ import { UIDHelper } from './UIDHelper';
 
 export class ChatItem {
 	readonly key: string;
-	readonly index: number;
+	readonly itemid: string;
 	readonly data: any;
 	readonly _created_date: Date;
 	readonly _created_time: number;
+	public index: number = -1;
 
-	constructor(ind: number, data: any);
-	constructor(ind: number, data: any, key: string);
+	constructor(d: any) {
+		//set the data
+		this.data = d;
 
-	constructor(ind: number, d: any, k?: string) {
-		this.index = ind;
+		//get the id from data
+		this.itemid = ChatItem.getObjectId(this.data);
+		if (this.itemid != null) this.key = 'msg-' + this.itemid;
+		else this.key = String(UIDHelper.nextid());
 
-		if (d && d instanceof ChatItem) {
-			this.key = d.key;
-			this.data = d.data;
-			this._created_date = d._created_date;
-		} else {
-			this.key = String(k || UIDHelper.nextid());
-			this.data = d;
-			this._created_date = ChatItem.getObjectDate(this.data);
-		}
-
+		//assign the date
+		this._created_date = ChatItem.getObjectDate(this.data);
 		this._created_time = this._created_date.getTime();
+	}
+
+	static getObjectId(inp) {
+		return inp._id ?? inp.id;
 	}
 	static getObjectDate(inp) {
 		let controlObject = inp;

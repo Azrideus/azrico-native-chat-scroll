@@ -1,19 +1,22 @@
 import React from 'react';
 import VirtualScroller from 'react-chatscroll';
 import examplechats from './examplechats.json';
-
-const MAX_OLD_MESSAGES = 200;
+ 
+const MAX_OLD_MESSAGES = 100;
+let newMessageId = 0;
 function makeMsg(index, date) {
 	if (typeof index === 'number') {
 		const template = examplechats[index % examplechats.length];
 
 		return {
+			_id: index,
 			user: template.user,
 			text: template.text,
 			date: date,
 		};
 	} else {
 		return {
+			_id: 'newmsg-' + newMessageId++,
 			user: 'me',
 			text: index,
 			date: date,
@@ -35,14 +38,13 @@ async function loadItemsFromDB(props: any): Promise<any[]> {
 	return await new Promise((resolve, reject) => {
 		console.log('load', skip, limit, date);
 		setTimeout(() => {
-			const itemsAfterDate =
+			const itemsBeforeDate =
 				date instanceof Date
-					? itemsInDB.filter((s) => (s.date as Date).getTime() < date.getTime())
+					? itemsInDB.filter((s) => (s.date as Date).getTime() <= date.getTime())
 					: itemsInDB;
 			//apply the skip and limit rules:
-			const res = itemsAfterDate.slice(skip, skip + limit);
-			console.log('dsl', itemsAfterDate.length, skip, limit);
-			console.log('loaded', res.length, 'items from db');
+			const res = itemsBeforeDate.slice(skip, skip + limit);
+			// console.log('dsl', itemsBeforeDate.length, skip, limit);
 			resolve(res);
 		}, Math.random() * 1000 + 500);
 	});

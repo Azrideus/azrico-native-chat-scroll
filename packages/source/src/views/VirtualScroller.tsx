@@ -2,7 +2,11 @@ import '../styles/styles.css';
 import React from 'react';
 import { useSize, currentDistanceToBottom, sizeResult } from '../classes/SizeHelper';
 import { ChatItem } from '../classes/ChatItem';
-import ChatManager, { LoadFunctionType, LoadDirection } from '../classes/ChatManager';
+import ChatManager, {
+	LoadFunctionType,
+	LoadDirection,
+	ChangeOperation,
+} from '../classes/ChatManager';
 
 const WRAPPER_HEIGHT = 400;
 
@@ -69,13 +73,16 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	const [isSticky, set_isSticky] = React.useState<boolean>(false);
 
 	function _onScroll(e) {
+		updateDistances();
+		checkShouldLoad();
+	}
+	function updateDistances() {
 		distanceToBottom.current = currentDistanceToBottom(
 			innerRef.current as any,
 			outerRef.current as any
 		);
 		distanceToTop.current = (outerRef.current as any).scrollTop;
 		set_isSticky(distanceToBottom.current < 50);
-		checkShouldLoad();
 	}
 
 	/* ------------------ load if reaching end or start of page ----------------- */
@@ -117,22 +124,34 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		if (!outerRef.current || !innerRef.current) return;
 		const itemDelta = chatManager.lastCountChange;
 		const isAdding = itemDelta > 0;
+		const lld = chatManager.lastLoadDirection;
+		const lcd = chatManager.lastChangeDirection;
+		const lastOp = chatManager.lastOperation;
 
-		if (itemDelta === 0 || chatManager.lastLoadDirection === LoadDirection.NONE) return;
+		if (itemDelta === 0 || lcd === LoadDirection.NONE || lastOp == ChangeOperation.NONE)
+			return;
 
-		const shouldStickToBottom =
-			(chatManager.lastLoadDirection === LoadDirection.DOWN && isSticky && isAdding) ||
-			(chatManager.lastLoadDirection === LoadDirection.UP) == isAdding;
-
-		//when adding items to bottom of the list and we try to remove items from above the list
-		//there is no need to update scroll positions
-		if (chatManager.lastLoadDirection === LoadDirection.DOWN && itemDelta > 0) return;
-
-		//console.log('stick to bottom:', chatManager.lastLoadDirection, itemDelta);
-		//console.log('stick to bottom:', shouldStickToBottom);
-		if (shouldStickToBottom) {
-			stickToBottom();
+		let _stickToTop = false;
+		let _stickToBot = false;
+		if (lastOp === ChangeOperation.ADD) {
+			if (lld === LoadDirection.DOWN) {
+				if (isSticky)
+					if (itemDelta > 5) {
+						//sticky is broken. no need to do anything
+					} else _stickToBot = true; //sticky to bottom of the list
+			} else if (lld === LoadDirection.UP) _stickToBot = true; //adding items to top, stick to bot
 		} else {
+			if (lcd === LoadDirection.DOWN) {
+				//removing from bottom of the list. stick to top
+				_stickToTop = true;
+			}
+		}
+		// console.log('lastOp', lastOp, 'lcd', lcd, 'lld', lld);
+		// console.log('ChangeOperation.ADD', ChangeOperation.ADD);
+		// console.log('stickToBot', _stickToBot, '_stickToTop', _stickToTop);
+		if (_stickToBot) {
+			stickToBottom();
+		} else if (_stickToTop) {
 			stickToTop();
 		}
 	}, [currentItems]);
@@ -144,10 +163,12 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			distanceToBottom.current;
 		const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
 		(outerRef.current as any).scrollTop = newScrollPosition;
+		// updateDistances();
 	}
 	function stickToTop() {
 		/* ------------------------ keep same distance to top ----------------------- */
 		(outerRef.current as any).scrollTop = distanceToTop.current;
+		// updateDistances();
 	}
 
 	/* -------------------------------------------------------------------------- */
