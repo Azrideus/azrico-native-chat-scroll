@@ -1,5 +1,5 @@
 {
-	"name": "react-chat-scroll-workspace",
+	"name": "@azrideus/react-chat-scroll-workspace",
 	"main": "source/index.tsx",
 	"private": true,
 	"scripts": {
@@ -48,5 +48,6 @@
 			"last 1 firefox version",
 			"last 1 safari version"
 		]
-	}
+	},
+	"packageManager": "yarn@3.5.0"
 }
