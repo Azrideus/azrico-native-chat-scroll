@@ -1,5 +1,5 @@
 import React from 'react';
-import VirtualScroller from '@azrideus/react-chat-scroll';
+import VirtualChatList from '@azrideus/react-chat-scroll';
 import examplechats from './examplechats.json';
 import ChatManager from '../../source/src/classes/ChatManager';
 
@@ -20,14 +20,21 @@ async function loadItemsFromDB(props: any): Promise<any[]> {
 		setTimeout(() => {
 			let searchedItems: any[] = [...itemsInDB];
 
-			if (_created_date.$gt instanceof Date) {
-				const dtTime = _created_date.$gt.getTime();
-				searchedItems = searchedItems.filter((s) => (s.date as Date).getTime() >= dtTime);
+			if (_created_date) {
+				if (_created_date.$gt instanceof Date) {
+					const dtTime = _created_date.$gt.getTime();
+					searchedItems = searchedItems.filter(
+						(s) => (s.date as Date).getTime() >= dtTime
+					);
+				}
+				if (_created_date.$lt instanceof Date) {
+					const dtTime = _created_date.$lt.getTime();
+					searchedItems = searchedItems.filter(
+						(s) => (s.date as Date).getTime() <= dtTime
+					);
+				}
 			}
-			if (_created_date.$lt instanceof Date) {
-				const dtTime = _created_date.$lt.getTime();
-				searchedItems = searchedItems.filter((s) => (s.date as Date).getTime() <= dtTime);
-			}
+
 			if (Array.isArray(exclude)) {
 				searchedItems = searchedItems.filter((s) => !exclude.includes(s._id));
 			}
@@ -49,10 +56,10 @@ async function loadItemsFromDB(props: any): Promise<any[]> {
 
 export function Examplechatscroll() {
 	const [message, set_message] = React.useState('');
-	const managerRef = React.useRef<ChatManager>(null);
+	const managerRef = React.useRef<ChatManager>();
 	const timerRef = React.useRef<any>();
 
-	async function addNewMsg(obj) {
+	async function addNewMsg(obj: any) {
 		itemsInDB.unshift(obj);
 		await managerRef.current?.sendNewMessage(obj);
 	}
@@ -70,7 +77,7 @@ export function Examplechatscroll() {
 	React.useEffect(() => {
 		addLoop();
 	}, []);
-	function handleChatSubmit(e) {
+	function handleChatSubmit(e: any) {
 		e.preventDefault();
 		if (message) {
 			const newMsg = {
@@ -118,8 +125,8 @@ export function Examplechatscroll() {
 						flex: 1,
 					}}
 				>
-					<VirtualScroller
-						managerRef={managerRef}
+					<VirtualChatList
+						managerRef={managerRef as any}
 						ItemRender={ItemRender}
 						BottomContent={BottomContent}
 						TopContent={TopContent}
@@ -151,11 +158,11 @@ export function Examplechatscroll() {
 	);
 }
 
-function TopContent(props) {
+function TopContent(props: any) {
 	const item = props.item;
 	return <div>You have reached the top of the list</div>;
 }
-function ItemRender(props) {
+function ItemRender(props: any) {
 	const item = props.item;
 	if (!item) return <div>item</div>;
 
@@ -196,7 +203,7 @@ function ItemRender(props) {
 	);
 }
 
-function formatDate(inputDate) {
+function formatDate(inputDate: any) {
 	if (inputDate instanceof Date) {
 		return inputDate.getHours() + ':' + inputDate.getMinutes();
 	}

@@ -1,3 +1,3 @@
 export * from './src';
-import VirtualScroller from './src';
-export default VirtualScroller;
+import VirtualChatList from './src';
+export default VirtualChatList;

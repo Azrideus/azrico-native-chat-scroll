@@ -84,10 +84,10 @@ export class ChatManager {
 	 * @param msglist
 	 */
 	async sendNewMessage(...msglist: Array<ChatItem | any>) {
-		if (msglist.length === 0) return;
-		const messagesToAdd = msglist.map((r: any) =>
+		const messagesToAdd = msglist.filter(s=>s).map((r: any) =>
 			r instanceof ChatItem ? r : new ChatItem(r)
 		);
+		if (messagesToAdd.length === 0) return;
 		if (this.isAtBottom) {
 			//we are at the bottom of the list, new messages should be added
 
@@ -125,10 +125,12 @@ export class ChatManager {
 
 		if (direction == LoadDirection.DOWN) {
 			search_query.sort = { _created_date: 1 };
-			search_query._created_date = { $gt: this.bottomMessage?._created_date };
-		} else {
+			if (this.bottomMessage?._created_date)
+				search_query._created_date = { $gt: this.bottomMessage?._created_date };
+		} else   {
 			search_query.sort = { _created_date: -1 };
-			search_query._created_date = { $lt: this.topMessage?._created_date };
+			if (this.topMessage?._created_date)
+				search_query._created_date = { $lt: this.topMessage?._created_date };
 		}
 		search_query.exclude = this.currentItems.map((r) => r.itemid);
 

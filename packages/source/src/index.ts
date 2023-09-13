@@ -1,5 +1,5 @@
-export * from './views/VirtualScroller';
+export * from './views/VirtualChatList';
 export * from './classes/ChatManager';
-export * from './classes/ChatItem'; 
-import VirtualScroller from './views/VirtualScroller';
-export default VirtualScroller;
+export * from './classes/ChatItem';
+import VirtualChatList from './views/VirtualChatList';
+export default VirtualChatList;

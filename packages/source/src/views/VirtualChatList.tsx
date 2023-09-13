@@ -8,9 +8,6 @@ import ChatManager, {
 	ChangeOperation,
 } from '../classes/ChatManager';
 
-
-  
-
 type VirtualScrollerProps = {
 	newItems?: any[];
 	ItemRender: React.ElementType<any>;
@@ -18,18 +15,14 @@ type VirtualScrollerProps = {
 	BottomContent?: React.ElementType<any>;
 	TopContent?: React.ElementType<any>;
 	loadFunction: LoadFunctionType;
-	managerRef?: React.MutableRefObject<ChatManager | null>;
+	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 };
 
-type ItemType = {
-	key: string;
-	data: any;
-};
 /**
  * Advanced Virtual scrolling
  * @param props
  */
-export function VirtualScroller(props: VirtualScrollerProps) {
+export function VirtualChatList(props: VirtualScrollerProps) {
 	//
 	const innerRef = React.useRef<HTMLDivElement>(null);
 	const outerRef = React.useRef<HTMLDivElement>(null);
@@ -61,8 +54,9 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	}
 
 	/* ---------------------------- scroll to bottom ---------------------------- */
-	React.useLayoutEffect(() => {
-		bottomElementRef.current?.scrollIntoView({});
+	React.useEffect(() => {
+		if (!bottomElementRef.current) return;
+		bottomElementRef.current.scrollIntoView({});
 		checkShouldLoad();
 	}, [bottomElementRef.current]);
 	/* ------------------ load if reaching end or start of page ----------------- */
@@ -106,7 +100,7 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		if (lastOp === ChangeOperation.NONE) return;
 		if (Number.isNaN(chatManager.referenceLastTop)) {
 			//fist load, stick to bottom
-			// console.log('first load sticky bot'); 
+			// console.log('first load sticky bot');
 			stickToBottom();
 		} else if (chatManager.isSticky && Math.abs(itemDelta) < 5) {
 			//sticky to bottom
@@ -193,4 +187,4 @@ function RowRender(props: RowRenderProps) {
 		</li>
 	);
 }
-export default VirtualScroller;
+export default VirtualChatList;
