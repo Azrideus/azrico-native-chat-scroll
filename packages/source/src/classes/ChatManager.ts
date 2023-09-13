@@ -50,6 +50,7 @@ export class ChatManager {
 	#lastLoadDirection: LoadDirection = LoadDirection.NONE;
 	#lastOperation: ChangeOperation = ChangeOperation.NONE;
 	#lastCountChange: number = 0;
+	#lastDBLoad: number = 0;
 
 	private currentLoadOperation?: any;
 
@@ -59,7 +60,6 @@ export class ChatManager {
 	private refreshFunction?: RefreshFunctionType;
 
 	private lastCount: number = 0;
-	private lastDBLoad: number = 0;
 
 	private id_veryTopMessage?: any;
 	private id_veryBottomMessage?: any;
@@ -141,7 +141,7 @@ export class ChatManager {
 		const loaded_items = await this.loadFunction(search_query);
 
 		//
-		this.lastDBLoad = loaded_items.length;
+		this.#lastDBLoad = loaded_items.length;
 
 		/* ------------------------ convert items to ChatItem ----------------------- */
 		let final_chats = loaded_items
@@ -234,7 +234,7 @@ export class ChatManager {
 		/* ---------------- loading less than limit means end of chat --------------- */
 		//we load less items than limit -> we have reached the top/bottom of the chat
 		if (this.isLastLoadFromDB) {
-			if (this.lastDBLoad < BATCH_SIZE) {
+			if (this.#lastDBLoad < BATCH_SIZE) {
 				//console.log('loaded less items than expected. updating max/min');
 				if (this.lastLoadDirection === LoadDirection.DOWN)
 					this.id_veryBottomMessage = this.bottomMessage?.itemid;
@@ -335,6 +335,9 @@ export class ChatManager {
 	}
 	get lastCountChange() {
 		return this.#lastCountChange;
+	}
+	get lastDBLoad() {
+		return this.#lastDBLoad;
 	}
 	get lastLoadDirection(): LoadDirection {
 		return this.#lastLoadDirection;

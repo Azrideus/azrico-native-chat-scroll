@@ -28,6 +28,7 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	const outerRef = React.useRef<HTMLDivElement>(null);
 	const bottomElementRef = React.useRef<HTMLDivElement>(null);
 
+	const firtLoad = React.useRef<boolean>(true);
 	const loadingFlag = React.useRef<boolean>(false);
 
 	const [updateKey, forceUpdate] = React.useReducer((x) => (x + 1) % 100, 0);
@@ -97,14 +98,20 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 		const lastOp = chatManager.lastOperation;
 		if (lastOp === ChangeOperation.NONE) return;
 
+		if (chatManager.lastDBLoad > 0 && firtLoad.current) {
+			firtLoad.current = false;
+			return stickToBottom();
+		}
 		if (Number.isNaN(chatManager.referenceLastTop)) {
 			//fist load, stick to bottom
-			stickToBottom();
+			return stickToBottom();
 		}
 		if (chatManager.isSticky && Math.abs(itemDelta) < 5) {
 			//sticky to bottom
-			stickToBottom();
-		} else {
+			return stickToBottom();
+		}
+
+		{
 			//keep the same distance to the reference message
 			const jumpDistance = chatManager.referenceTop - chatManager.referenceLastTop;
 			const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
@@ -114,15 +121,7 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	}, [currentItems]);
 
 	function stickToBottom() {
-		/* ---------------------- keep same distance to bottom ---------------------- */
-		const jumpDistance = currentDistanceToBottom(
-			innerRef.current as any,
-			outerRef.current as any
-		);
-		// console.log('sticky bot ', jumpDistance);
-		const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
-		(outerRef.current as any).scrollTop = newScrollPosition;
-		// updateDistances();
+		(outerRef.current as any).scrollTop = outerRef.current?.scrollHeight;
 	}
 
 	/* -------------------------------------------------------------------------- */

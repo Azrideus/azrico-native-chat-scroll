@@ -63,19 +63,22 @@ export function Examplechatscroll() {
 		itemsInDB.unshift(obj);
 		await managerRef.current?.sendNewMessage(obj);
 	}
-	async function addLoop() {
-		const newMsg = {
-			user: 'spammer',
-			text: 'spam: ' + ++newMessageId,
-			date: new Date(),
-		};
+	async function addLoop(firsttime = false) {
 		if (itemsInDB.length > 1000) return;
-		await addNewMsg(newMsg);
+		if (!firsttime) {
+			const newMsg = {
+				user: 'spammer',
+				text: 'spam: ' + ++newMessageId,
+				date: new Date(),
+			};
+			await addNewMsg(newMsg);
+		}
+
 		if (timerRef.current) clearTimeout(timerRef.current);
 		timerRef.current = setTimeout(addLoop, 7000);
 	}
 	React.useEffect(() => {
-		addLoop();
+		addLoop(true);
 	}, []);
 	function handleChatSubmit(e: any) {
 		e.preventDefault();
