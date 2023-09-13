@@ -15,7 +15,7 @@ const {
 module.exports = (config, env) => {
 	/* -------------------------------------------------------------------------- */
 	let rootdir = path.resolve('..');
-	if (!path.dirname(rootdir).startsWith('react-chatscroll')) {
+	if (!path.dirname(rootdir).startsWith('react-chat-scroll')) {
 		rootdir = path.resolve('../..');
 	}
 

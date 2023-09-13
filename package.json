@@ -1,9 +1,14 @@
 {
-	"name": "react-chatscroll-workspace",
-	"main": "source/index.tsx",
-	"private": true,
+	"name": "react-chat-scroll-workspace",
+	"main": "source/index.tsx", 
+	"version": "1.0.0",
+	"private":true,
 	"scripts": {
-		"start": "yarn workspace demo start"
+		"start": "yarn workspace demo start",
+		"build": "yarn workspace @azrideus/react-chat-scroll build",
+		"publish_default": "yarn workspace @azrideus/react-chat-scroll publish_default",
+		"test": "jest"
+	 
 	},
 	"workspaces": {
 		"packages": [

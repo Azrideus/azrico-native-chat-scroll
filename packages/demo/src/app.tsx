@@ -1,5 +1,5 @@
 import React from 'react';
-import VirtualScroller from 'react-chatscroll';
+import VirtualScroller from 'react-chat-scroll';
 import examplechats from './examplechats.json';
 import ChatManager from '../../source/src/classes/ChatManager';
 
@@ -47,7 +47,7 @@ async function loadItemsFromDB(props: any): Promise<any[]> {
 	});
 }
 
-export function ExampleChatScroll() {
+export function Examplechat-scroll() {
 	const [message, set_message] = React.useState('');
 	const managerRef = React.useRef<ChatManager>(null);
 	const timerRef = React.useRef<any>();
@@ -209,4 +209,4 @@ function LoadingArea() {
 function BottomContent() {
 	return <div>End of chat</div>;
 }
-export default ExampleChatScroll;
+export default Examplechat-scroll;

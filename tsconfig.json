@@ -2,12 +2,11 @@
 	"extends": "./config/tsconfig.base.json",
 	"compilerOptions": {
 		"sourceMap": true,
-		"types": ["jest", "node"],
-		"outDir": "./dist",
+		"types": ["jest", "node"], 
 		"baseUrl": ".",
 		"paths": {
 			"demo": ["packages/demo"],
-			"react-chatscroll": ["packages/source"]
+			"react-chat-scroll": ["packages/source"]
 		}
 	},
 	"exclude": ["node_modules", "dist", "config"]

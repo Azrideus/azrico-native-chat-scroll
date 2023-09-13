@@ -1,10 +1,22 @@
 {
-	"name": "react-chatscroll",
-	"version": "1.0.0",
+	"name": "@azrideus/react-chat-scroll",
+	"version": "1.0.0", 
 	"main": "./src/index",
-	"description": "React Virtualized List for chat app layout",
+	"description": "React Virtualized List for chat app",
 	"author": "Azrideus",
+	"private":false,
+
 	"homepage": ".",
+		"scripts": { 
+		"build": "tsc && yarn cp_themes && babel dist --out-dir dist",
+		"test": "jest",
+		"cp_themes": "copyfiles ./src/*/*.css ./dist/",
+		"publish_default": "npm publish --access public --tag latest;"
+	},
+	"peerDependencies": {
+		"react": ">=18.0.0",
+		"react-dom": ">=18.0.0"
+	},
 	"dependencies": {
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0"
