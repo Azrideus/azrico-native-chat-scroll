@@ -106,20 +106,18 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		if (lastOp === ChangeOperation.NONE) return;
 		if (Number.isNaN(chatManager.referenceLastTop)) {
 			//fist load, stick to bottom
-			console.log('first load sticky bot');
-
+			// console.log('first load sticky bot'); 
 			stickToBottom();
 		} else if (chatManager.isSticky && Math.abs(itemDelta) < 5) {
 			//sticky to bottom
-			console.log('sticky bot');
+			// console.log('sticky bot');
 			stickToBottom();
 		} else {
 			//keep the same distance to the reference message
 			const jumpDistance = chatManager.referenceTop - chatManager.referenceLastTop;
 			const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
-			console.log('jumpDistance:', jumpDistance);
-
 			(outerRef.current as any).scrollTop = newScrollPosition;
+			// console.log('jumpDistance:', jumpDistance);
 		}
 	}, [currentItems]);
 

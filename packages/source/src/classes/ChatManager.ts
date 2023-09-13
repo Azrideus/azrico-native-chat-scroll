@@ -91,8 +91,7 @@ export class ChatManager {
 		if (this.isAtBottom) {
 			//we are at the bottom of the list, new messages should be added
 
-			// console.log('add Message:', messagesToAdd);
-  
+			// console.log('add Message:', messagesToAdd); 
 			await this.add_items_to_list(messagesToAdd, LoadDirection.DOWN, false);
 		} 
 	}
@@ -180,16 +179,11 @@ export class ChatManager {
 		this.before_update();
 		this.currentItems = this.cleanExtraItems(items);
 		this.#lastCountChange = items.length - this.lastCount;
-		this.lastCount = this.currentItems.length;
-		//console.log('dayZeroDate', this.#dayZeroDate);
-		//console.log('loadedNewestDate', this.#loadedNewestDate);
-		//console.log('diff', this.#loadedNewestDate - (this.#dayZeroDate || 0));
-		//console.log('isAtBottom', this.#isAtBottom);
+		this.lastCount = this.currentItems.length; 
 		// console.log('setitems', this.currentItems);
 		this.check_position();
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
-
-		this.after_update();
+ 
 	}
 
 	/**
@@ -231,9 +225,7 @@ export class ChatManager {
 			this.referenceItem = this.bottomMessage;
 		}
 		this.referenceItem?.savePosition();
-	}
-	private after_update() {}
-
+	} 
 	/**
 	 * check if we reached the bottom or top of the list
 	 */
