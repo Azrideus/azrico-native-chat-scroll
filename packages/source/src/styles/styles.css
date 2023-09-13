@@ -9,19 +9,19 @@
 	flex: 1;
 }
 .azchat-virtualContainer {
-	overflow: hidden; 
+	overflow-x: hidden;
+	overflow-y: scroll; 
 	width: 100%;
+	height: 100%;
+}
+.azchat-inner-container { 
+	width: 100%; 
 }
 
-.azchat-virtualContainer + div {
-overflow-x: hidden;
-	overflow-y: scroll;
-}
-.azchat-virtualContainer ol {
+.azchat-inner-container ol {
 	padding: 0;
 	margin: 0;
-	list-style: none;
-	overflow: hidden;
+	list-style: none; 
 }
 
 .azchat-item {

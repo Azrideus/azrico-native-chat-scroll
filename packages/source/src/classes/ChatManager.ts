@@ -39,7 +39,7 @@ export class ChatManager {
 	//we update scroll positions relative to this item to prevent the scroll from jumping
 	private referenceItem: ChatItem | undefined;
 
-	private currentItems: ChatItem[] = []; 
+	private currentItems: ChatItem[] = [];
 
 	private isLastLoadFromDB: boolean = true;
 	public isSticky: boolean = true;
@@ -84,16 +84,16 @@ export class ChatManager {
 	 * @param msglist
 	 */
 	async sendNewMessage(...msglist: Array<ChatItem | any>) {
-		const messagesToAdd = msglist.filter(s=>s).map((r: any) =>
-			r instanceof ChatItem ? r : new ChatItem(r)
-		);
+		const messagesToAdd = msglist
+			.filter((s) => s)
+			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(r)));
 		if (messagesToAdd.length === 0) return;
 		if (this.isAtBottom) {
 			//we are at the bottom of the list, new messages should be added
 
-			// console.log('add Message:', messagesToAdd); 
+			// console.log('add Message:', messagesToAdd);
 			await this.add_items_to_list(messagesToAdd, LoadDirection.DOWN, false);
-		} 
+		}
 	}
 
 	/**
@@ -127,7 +127,7 @@ export class ChatManager {
 			search_query.sort = { _created_date: 1 };
 			if (this.bottomMessage?._created_date)
 				search_query._created_date = { $gt: this.bottomMessage?._created_date };
-		} else   {
+		} else {
 			search_query.sort = { _created_date: -1 };
 			if (this.topMessage?._created_date)
 				search_query._created_date = { $lt: this.topMessage?._created_date };
@@ -181,11 +181,10 @@ export class ChatManager {
 		this.before_update();
 		this.currentItems = this.cleanExtraItems(items);
 		this.#lastCountChange = items.length - this.lastCount;
-		this.lastCount = this.currentItems.length; 
+		this.lastCount = this.currentItems.length;
 		// console.log('setitems', this.currentItems);
 		this.check_position();
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
- 
 	}
 
 	/**
@@ -227,7 +226,7 @@ export class ChatManager {
 			this.referenceItem = this.bottomMessage;
 		}
 		this.referenceItem?.savePosition();
-	} 
+	}
 	/**
 	 * check if we reached the bottom or top of the list
 	 */
@@ -331,6 +330,9 @@ export class ChatManager {
 	}
 
 	/* number of changed items in the last load */
+	get itemCount() {
+		return this.currentItems.length;
+	}
 	get lastCountChange() {
 		return this.#lastCountChange;
 	}

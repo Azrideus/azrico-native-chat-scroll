@@ -53,12 +53,10 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 		});
 	}
 
-	/* ---------------------------- scroll to bottom ---------------------------- */
+	/* ------------------------------ initial load ------------------------------ */
 	React.useEffect(() => {
-		if (!bottomElementRef.current) return;
-		bottomElementRef.current.scrollIntoView({});
 		checkShouldLoad();
-	}, [bottomElementRef.current]);
+	}, []);
 	/* ------------------ load if reaching end or start of page ----------------- */
 	async function checkShouldLoad() {
 		if (loadingFlag.current) return;
@@ -98,13 +96,13 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 		const itemDelta = chatManager.lastCountChange;
 		const lastOp = chatManager.lastOperation;
 		if (lastOp === ChangeOperation.NONE) return;
+
 		if (Number.isNaN(chatManager.referenceLastTop)) {
 			//fist load, stick to bottom
-			// console.log('first load sticky bot');
 			stickToBottom();
-		} else if (chatManager.isSticky && Math.abs(itemDelta) < 5) {
+		}
+		if (chatManager.isSticky && Math.abs(itemDelta) < 5) {
 			//sticky to bottom
-			// console.log('sticky bot');
 			stickToBottom();
 		} else {
 			//keep the same distance to the reference message
@@ -117,9 +115,11 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 
 	function stickToBottom() {
 		/* ---------------------- keep same distance to bottom ---------------------- */
-		const jumpDistance =
-			currentDistanceToBottom(innerRef.current as any, outerRef.current as any) -
-			chatManager.distanceToBottom;
+		const jumpDistance = currentDistanceToBottom(
+			innerRef.current as any,
+			outerRef.current as any
+		);
+		// console.log('sticky bot ', jumpDistance);
 		const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
 		(outerRef.current as any).scrollTop = newScrollPosition;
 		// updateDistances();
@@ -140,7 +140,7 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 			}
 			onScroll={_onScroll}
 		>
-			<div ref={innerRef}>
+			<div ref={innerRef} className="azchat-inner-container">
 				{chatManager.isAtTop && props.TopContent && <props.TopContent />}
 				{!chatManager.isAtTop && (
 					<div className={'azchat-wrapper'}>
