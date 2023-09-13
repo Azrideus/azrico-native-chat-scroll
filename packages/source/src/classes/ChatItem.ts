@@ -9,7 +9,6 @@ export class ChatItem {
 	private __options = {};
 
 	public isNew: boolean = false;
-	public index: number = -1;
 	public itemRef?: HTMLElement;
 
 	constructor(d: any) {
@@ -17,9 +16,8 @@ export class ChatItem {
 		this.data = d;
 
 		//get the id from data
-		this.itemid = ChatItem.getObjectId(this.data);
-		if (this.itemid != null) this.key = 'msg-' + this.itemid;
-		else this.key = String(UIDHelper.nextid());
+		this.itemid = ChatItem.getObjectId(this.data) || UIDHelper.nextid();
+		this.key = 'msg-' + this.itemid;
 
 		//assign the date
 		this._created_date = ChatItem.getObjectDate(this.data);

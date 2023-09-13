@@ -5,28 +5,43 @@ import ChatManager from '../../source/src/classes/ChatManager';
 
 let newMessageId = 0;
 
-const itemsInDB = examplechats
-	.map((r, i) => {
-		return {
-			_id: i,
-			user: r['User Name'],
-			text: r['Content'],
-			date: new Date(r['Date']),
-			...r,
-		};
-	})
-	.sort((a, b) => b.date.getTime() - a.date.getTime()) as any[];
+const itemsInDB = examplechats.map((r, i) => {
+	return {
+		_id: i,
+		user: r['User Name'],
+		text: r['Content'],
+		date: new Date(r['Date']),
+		...r,
+	};
+});
 async function loadItemsFromDB(props: any): Promise<any[]> {
-	const { skip, limit, date } = props;
+	let { skip, limit, _created_date, exclude, sort } = props;
 	return await new Promise((resolve, reject) => {
 		setTimeout(() => {
-			const itemsBeforeDate =
-				date instanceof Date
-					? itemsInDB.filter((s) => (s.date as Date).getTime() <= date.getTime())
-					: itemsInDB;
+			let searchedItems: any[] = [...itemsInDB];
+
+			if (_created_date.$gt instanceof Date) {
+				const dtTime = _created_date.$gt.getTime();
+				searchedItems = searchedItems.filter((s) => (s.date as Date).getTime() >= dtTime);
+			}
+			if (_created_date.$lt instanceof Date) {
+				const dtTime = _created_date.$lt.getTime();
+				searchedItems = searchedItems.filter((s) => (s.date as Date).getTime() <= dtTime);
+			}
+			if (Array.isArray(exclude)) {
+				searchedItems = searchedItems.filter((s) => !exclude.includes(s._id));
+			}
+			if (sort._created_date) {
+				const sortdir = sort._created_date;
+				searchedItems.sort(
+					(a, b) => (a.date.getTime() - b.date.getTime()) * sortdir
+				) as any[];
+			}
 			//apply the skip and limit rules:
-			const res = itemsBeforeDate.slice(skip, skip + limit);
-			// console.log('dsl', itemsBeforeDate.length, skip, limit);
+			if (!skip) skip = 0;
+			const res = searchedItems.slice(skip, skip + limit);
+
+			console.log('loadItemsFromDB', props);
 			resolve(res);
 		}, Math.random() * 1000 + 500);
 	});
@@ -43,25 +58,22 @@ export function ExampleChatScroll() {
 	}
 	async function addLoop() {
 		const newMsg = {
-			_id: 'new' + newMessageId,
-			user: 'spam',
-			text: 'spam: ' + newMessageId,
+			user: 'spammer',
+			text: 'spam: ' + ++newMessageId,
 			date: new Date(),
 		};
-		newMessageId++;
 		if (itemsInDB.length > 1000) return;
 		await addNewMsg(newMsg);
 		if (timerRef.current) clearTimeout(timerRef.current);
-		timerRef.current = setTimeout(addLoop, 500);
+		timerRef.current = setTimeout(addLoop, 7000);
 	}
 	React.useEffect(() => {
-		//addLoop();
+		addLoop();
 	}, []);
 	function handleChatSubmit(e) {
 		e.preventDefault();
 		if (message) {
 			const newMsg = {
-				_id: 'new' + newMessageId++,
 				user: 'me',
 				text: message,
 				date: new Date(),

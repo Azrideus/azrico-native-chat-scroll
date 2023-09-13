@@ -59,6 +59,12 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			});
 		});
 	}
+
+	/* ---------------------------- scroll to bottom ---------------------------- */
+	React.useLayoutEffect(() => {
+		bottomElementRef.current?.scrollIntoView({});
+		checkShouldLoad();
+	}, [bottomElementRef.current]);
 	/* ------------------ load if reaching end or start of page ----------------- */
 	async function checkShouldLoad() {
 		if (loadingFlag.current) return;
@@ -72,12 +78,6 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			}
 		}
 	}
-
-	/* ---------------------------- scroll to bottom ---------------------------- */
-	React.useLayoutEffect(() => {
-		bottomElementRef.current?.scrollIntoView({});
-		checkShouldLoad();
-	}, [bottomElementRef.current]);
 
 	/* -------------------------------------------------------------------------- */
 	/*                               Check load page                              */
@@ -103,46 +103,26 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		if (!outerRef.current || !innerRef.current) return;
 		const itemDelta = chatManager.lastCountChange;
 		const lastOp = chatManager.lastOperation;
-		if (itemDelta === 0 || lastOp == ChangeOperation.NONE) return;
+		if (lastOp === ChangeOperation.NONE) return;
+		if (Number.isNaN(chatManager.referenceLastTop)) {
+			//fist load, stick to bottom
+			console.log('first load sticky bot');
 
-		// console.log('manager jump:', jumpDistance);
-		// let _stickToTop = false;
-		// let _stickToBot = false;
-
-		// switch (lastOp) {
-		// 	case ChangeOperation.ADD_UP:
-		// 		//adding items to top, stick to bot
-		// 		_stickToBot = true;
-		// 		break;
-		// 	case ChangeOperation.ADD_DOWN:
-		// 		//if adding few items to bottom of the list we can stick to the bottom
-		// 		if (chatManager.isSticky && itemDelta < 5) _stickToBot = true;
-		// 		break;
-		// 	case ChangeOperation.REMOVE_UP:
-		// 		break;
-		// 	case ChangeOperation.REMOVE_DOWN:
-		// 		//removing from bottom of the list. stick to top
-		// 		_stickToTop = true;
-		// 		break;
-		// }
-
-		if (chatManager.isSticky && itemDelta < 5) {
+			stickToBottom();
+		} else if (chatManager.isSticky && Math.abs(itemDelta) < 5) {
+			//sticky to bottom
+			console.log('sticky bot');
 			stickToBottom();
 		} else {
+			//keep the same distance to the reference message
 			const jumpDistance = chatManager.referenceTop - chatManager.referenceLastTop;
 			const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
+			console.log('jumpDistance:', jumpDistance);
+
 			(outerRef.current as any).scrollTop = newScrollPosition;
 		}
-
-		// //console.log('isSticky', chatManager.isSticky);
-		// //console.log('lastOp', lastOp, 'lcd', lcd, 'lld', lld);
-		// // console.log('stickToBot', _stickToBot, '_stickToTop', _stickToTop);
-		// if (_stickToBot) {
-		// 	stickToBottom();
-		// } else if (_stickToTop) {
-		// 	stickToTop();
-		// }
 	}, [currentItems]);
+
 	function stickToBottom() {
 		/* ---------------------- keep same distance to bottom ---------------------- */
 		const jumpDistance =
@@ -170,19 +150,23 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 		>
 			<div ref={innerRef}>
 				{chatManager.isAtTop && props.TopContent && <props.TopContent />}
-				<div className={'azchat-wrapper'}>
-					{!chatManager.isAtTop && props.WrapperContent && <props.WrapperContent />}
-				</div>
+				{!chatManager.isAtTop && (
+					<div className={'azchat-wrapper'}>
+						{!chatManager.isAtTop && props.WrapperContent && <props.WrapperContent />}
+					</div>
+				)}
 
 				<ol>
 					{currentItems.map((r, index) =>
 						RowRender({ ...props, chatitem: r, index: index })
 					)}
 				</ol>
+				{!chatManager.isAtBottom && (
+					<div className={'azchat-wrapper'}>
+						{props.WrapperContent && <props.WrapperContent />}
+					</div>
+				)}
 
-				<div className={'azchat-wrapper'}>
-					{!chatManager.isAtBottom && props.WrapperContent && <props.WrapperContent />}
-				</div>
 				<div ref={bottomElementRef}>
 					{chatManager.isAtBottom && props.BottomContent && <props.BottomContent />}
 				</div>

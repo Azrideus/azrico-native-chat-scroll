@@ -2,7 +2,7 @@ import { ChatItem } from './ChatItem';
 import { UIDHelper } from './UIDHelper';
 
 //max number of items we keep in cache
-const MAX_LOAD = 80;
+const MAX_LOAD = 65;
 
 //items we load in each batch
 const BATCH_SIZE = 30;
@@ -21,9 +21,11 @@ export enum ChangeOperation {
 }
 
 export type SearchQuery = {
-	skip: number;
+	skip?: number;
 	limit: number;
-	date?: Date;
+	_created_date?: { $lt?: Date; $gt?: Date };
+	sort?: any;
+	exclude?: any[];
 };
 export type LoadFunctionType = (props: SearchQuery) => Promise<any[]> | any[];
 export type RefreshFunctionType = () => any;
@@ -36,11 +38,10 @@ export class ChatManager {
 
 	//we update scroll positions relative to this item to prevent the scroll from jumping
 	private referenceItem: ChatItem | undefined;
-	#lastJumpDistance: number = 0;
 
-	private currentItems: ChatItem[] = [];
-	private newItems: ChatItem[] = [];
+	private currentItems: ChatItem[] = []; 
 
+	private isLastLoadFromDB: boolean = true;
 	public isSticky: boolean = true;
 	// public scrollPercent: number = 0;
 	public distanceToTop: number = 0;
@@ -60,13 +61,11 @@ export class ChatManager {
 	private lastCount: number = 0;
 	private lastDBLoad: number = 0;
 
-	//date of newest message
-	//this helps in pagination
-	private dayZeroDate?: number;
-	private idOfFirstMessage?: any;
+	private id_veryTopMessage?: any;
+	private id_veryBottomMessage?: any;
 
-	#isAtBottom?: boolean;
-	#isAtTop?: boolean;
+	#isAtBottom: boolean = true;
+	#isAtTop: boolean = false;
 
 	constructor() {}
 
@@ -89,47 +88,31 @@ export class ChatManager {
 		const messagesToAdd = msglist.map((r: any) =>
 			r instanceof ChatItem ? r : new ChatItem(r)
 		);
-
-		console.log('New Message:', messagesToAdd);
 		if (this.isAtBottom) {
 			//we are at the bottom of the list, new messages should be added
 
-			// fix indexes of the items
-			messagesToAdd.forEach((r, i) => {
-				r.index = i;
-				r.isNew = true;
-			});
-
-			//shift all indexes up
-			this.currentItems.forEach((r) => {
-				r.index += messagesToAdd.length;
-			});
-
-			this.newItems.push();
-			//add the items
-			await this.add_items_to_list(messagesToAdd, LoadDirection.DOWN);
-		}
-	}
-
-	async loadIfNeeded() {
-		if (this.shouldLoadTop) await this.loadWhenAvailable(LoadDirection.UP);
-		else if (this.shouldLoadDown) await this.loadWhenAvailable(LoadDirection.DOWN);
-		else return;
-		//keep loading if we are still at top/bottom of the list
-		await this.loadIfNeeded();
+			// console.log('add Message:', messagesToAdd);
+  
+			await this.add_items_to_list(messagesToAdd, LoadDirection.DOWN, false);
+		} 
 	}
 
 	/**
-	 * load the next batch of items when all previous loads are finished
+	 * load the next batch of items when previous load is finished
 	 * @param direction
 	 * @returns
 	 */
-	private async loadWhenAvailable(direction: LoadDirection = LoadDirection.UP) {
-		//wait for the previous load to finish
+	async loadIfNeeded() {
+		let loadDir = LoadDirection.NONE;
+		if (this.shouldLoadTop) loadDir = LoadDirection.UP;
+		else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
+		else return;
+
 		if (this.currentLoadOperation != null) await this.currentLoadOperation;
-		this.currentLoadOperation = this.load_items(direction);
+		this.currentLoadOperation = this.load_items(loadDir);
 		return await this.currentLoadOperation;
 	}
+
 	/**
 	 * load more items in the given direction
 	 * @param direction
@@ -138,20 +121,17 @@ export class ChatManager {
 		if (!this.loadFunction) return;
 
 		const search_query: SearchQuery = {
-			skip: 0,
 			limit: BATCH_SIZE,
-			date: this.dayZeroDate ? new Date(this.dayZeroDate) : undefined,
 		};
+
 		if (direction == LoadDirection.DOWN) {
-			search_query.skip = Math.max(0, this.bottomMessageIndex - BATCH_SIZE);
-			//make sure we dont load items that are already loaded
-			search_query.limit = Math.min(
-				BATCH_SIZE,
-				this.bottomMessageIndex - search_query.skip
-			);
+			search_query.sort = { _created_date: 1 };
+			search_query._created_date = { $gt: this.bottomMessage?._created_date };
 		} else {
-			search_query.skip = this.topMessageIndex + 1;
+			search_query.sort = { _created_date: -1 };
+			search_query._created_date = { $lt: this.topMessage?._created_date };
 		}
+		search_query.exclude = this.currentItems.map((r) => r.itemid);
 
 		this.#lastLoadDirection = direction;
 
@@ -169,151 +149,143 @@ export class ChatManager {
 			.sort((a, b) => b._created_time - a._created_time);
 
 		/* ------------------------------ apply indexes ----------------------------- */
-		const startingIndex = search_query.skip;
-		final_chats = final_chats.map((r, i) => {
-			r.index = startingIndex + i;
-			return r;
-		});
+
 		/* -------------------- then reverse and add to the list -------------------- */
 		final_chats = final_chats.reverse();
-		await this.add_items_to_list(final_chats, direction);
+		await this.add_items_to_list(final_chats, direction, true);
 	}
 
-	private async remove_items(count: number, direction: LoadDirection = LoadDirection.UP) {
-		try {
-			if (count === 0 || direction === LoadDirection.NONE) return;
-
-			this.#lastOperation =
-				direction === LoadDirection.UP
-					? ChangeOperation.REMOVE_UP
-					: ChangeOperation.REMOVE_DOWN;
-
-			let resultItems = [...this.currentItems];
-			count = Math.min(Math.abs(count), resultItems.length);
-			//
-			if (direction === LoadDirection.UP) {
-				//remove from top
-				resultItems.splice(0, count);
-			} else if (direction === LoadDirection.DOWN) {
-				const rmStartIndex = Math.max(resultItems.length - count, 0);
-				resultItems.splice(rmStartIndex);
-			}
-			await this.setItems(resultItems);
-		} finally {
-			this.check_position();
-		}
-	}
 	private async add_items_to_list(
-		items: ChatItem[],
-		direction: LoadDirection = LoadDirection.UP
+		items_to_add: ChatItem[],
+		direction: LoadDirection = LoadDirection.UP,
+		isFromDB: boolean = true
 	) {
-		try {
-			if (items.length === 0) return;
-			this.#lastOperation =
-				direction === LoadDirection.UP
-					? ChangeOperation.ADD_UP
-					: ChangeOperation.ADD_DOWN;
+		this.#lastOperation =
+			direction === LoadDirection.UP ? ChangeOperation.ADD_UP : ChangeOperation.ADD_DOWN;
 
-			const nextItems = [...this.currentItems];
+		this.isLastLoadFromDB = isFromDB;
 
-			if (direction === LoadDirection.UP) {
-				//add above the list
-				nextItems.unshift(...items);
-			} else {
-				//add below the list
-				nextItems.push(...items);
-			}
-			await this.setItems(nextItems);
-			await this.cleanExtraItems();
-		} finally {
-			this.check_position();
+		const nextItems = [...this.currentItems];
+		if (direction === LoadDirection.UP) {
+			//add above the list
+			nextItems.unshift(...items_to_add);
+		} else {
+			//add below the list
+			nextItems.push(...items_to_add);
 		}
+		await this.setItems(nextItems);
 	}
 
 	private async setItems(items: ChatItem[]) {
 		this.before_update();
-		this.currentItems = items;
-		this.#lastCountChange = this.currentItems.length - this.lastCount;
+		this.currentItems = this.cleanExtraItems(items);
+		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
 		//console.log('dayZeroDate', this.#dayZeroDate);
 		//console.log('loadedNewestDate', this.#loadedNewestDate);
 		//console.log('diff', this.#loadedNewestDate - (this.#dayZeroDate || 0));
 		//console.log('isAtBottom', this.#isAtBottom);
-		//console.log('setitems', this.currentItems);
+		// console.log('setitems', this.currentItems);
+		this.check_position();
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
 
 		this.after_update();
 	}
 
 	/**
-	 * clear items that are no longer in view
+	 * clear items in the given list to match the max item count
 	 */
-	private async cleanExtraItems() {
-		if (this.currentItems.length > MAX_LOAD) {
-			const countToRemove = MAX_LOAD - this.currentItems.length + 10;
-			let dirToRemove = LoadDirection.NONE;
+	private cleanExtraItems(inputItems: ChatItem[]): ChatItem[] {
+		if (inputItems.length <= MAX_LOAD) return inputItems;
+		let countToRemove = MAX_LOAD - inputItems.length + 10;
 
-			if (this.lastLoadDirection === LoadDirection.UP && !this.isCloseToBottom) {
-				dirToRemove = LoadDirection.DOWN;
-			} else if (this.lastLoadDirection === LoadDirection.DOWN && !this.isCloseToTop) {
-				dirToRemove = LoadDirection.UP;
-			}
+		let dirToRemove = LoadDirection.NONE;
 
-			console.log('removing items from', dirToRemove);
-
-			if (dirToRemove != LoadDirection.NONE)
-				await new Promise((resolve) => {
-					setTimeout(
-						(selfRef) => {
-							this.remove_items(countToRemove, dirToRemove).then(resolve);
-						},
-						0,
-						this
-					);
-				});
+		if (this.lastLoadDirection === LoadDirection.UP && !this.isCloseToBottom) {
+			dirToRemove = LoadDirection.DOWN;
+		} else if (this.lastLoadDirection === LoadDirection.DOWN && !this.isCloseToTop) {
+			dirToRemove = LoadDirection.UP;
 		}
+
+		countToRemove = Math.min(Math.abs(countToRemove), inputItems.length);
+		if (countToRemove === 0 || dirToRemove === LoadDirection.NONE) return inputItems;
+
+		let resultItems = [...inputItems];
+		//
+		if (dirToRemove === LoadDirection.UP) {
+			//remove from top
+			resultItems.splice(0, countToRemove);
+		} else if (dirToRemove === LoadDirection.DOWN) {
+			const rmStartIndex = Math.max(resultItems.length - countToRemove, 0);
+			resultItems.splice(rmStartIndex);
+		}
+		return resultItems;
 	}
 
 	private before_update() {
+		//set reference to an item that is in view
+		//we do this to make sure our reference item doesnt get unloaded
+		if (this.lastLoadDirection === LoadDirection.UP) {
+			this.referenceItem = this.topMessage;
+		} else if (this.lastLoadDirection === LoadDirection.DOWN) {
+			this.referenceItem = this.bottomMessage;
+		}
 		this.referenceItem?.savePosition();
 	}
-	private after_update() {
-		this.referenceItem = this.middleMessage;
-
-		if (
-			this.bottomMessageDate &&
-			(!this.dayZeroDate || this.bottomMessageDate > this.dayZeroDate)
-		) {
-			//first time loading items
-			//find the newest date so we can use it as reference
-			this.dayZeroDate = this.bottomMessageDate;
-			//console.log('day zero date updated');
-		}
-	}
+	private after_update() {}
 
 	/**
 	 * check if we reached the bottom or top of the list
 	 */
 	private check_position() {
-		const new_isAtBottom =
-			!this.dayZeroDate ||
-			!this.bottomMessageDate ||
-			this.bottomMessageDate >= this.dayZeroDate;
-
-		//if we load fewer items than the limit, it means we have reached the top of the chat
-		if (this.lastLoadDirection === LoadDirection.UP && this.lastDBLoad < BATCH_SIZE) {
-			this.idOfFirstMessage = this.topMessage?.itemid;
+		/* ---------------- loading less than limit means end of chat --------------- */
+		//we load less items than limit -> we have reached the top/bottom of the chat
+		if (this.isLastLoadFromDB) {
+			if (this.lastDBLoad < BATCH_SIZE) {
+				//console.log('loaded less items than expected. updating max/min');
+				if (this.lastLoadDirection === LoadDirection.DOWN)
+					this.id_veryBottomMessage = this.bottomMessage?.itemid;
+				else if (this.lastLoadDirection === LoadDirection.UP)
+					this.id_veryTopMessage = this.topMessage?.itemid;
+			} else if (!this.id_veryBottomMessage) {
+				//if bottom message is not set yet, set it to the current bottom item
+				this.id_veryBottomMessage = this.bottomMessage?.itemid;
+			}
 		}
 
+		/* -------------------------------------------------------------------------- */
+
+		/* -------------- clear top/bot if we are in middle of the list ------------- */
+		// so we can correctly detect new messages that are added below the veryBottomMessage
+		if (this.isLastLoadFromDB) {
+			if (this.id_veryBottomMessage != this.bottomMessage?.itemid) {
+				this.id_veryBottomMessage = -1;
+				//console.log('clear very bottom message');
+			}
+			if (this.id_veryTopMessage != this.topMessage?.itemid) {
+				this.id_veryTopMessage = -1;
+				//console.log('clear very top message');
+			}
+		} else {
+			this.id_veryBottomMessage = this.bottomMessage?.itemid;
+		}
+
+		/* -------------------------------------------------------------------------- */
+
+		/* ----------------------- set the new istop/isbottom ----------------------- */
 		const new_isAtTop =
-			this.topMessage != null && this.topMessage.itemid === this.idOfFirstMessage;
-
-		if (new_isAtTop != this.#isAtTop || new_isAtBottom != this.#isAtBottom) {
-			this.refreshFunction && this.refreshFunction();
-		}
-
+			this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
+		const new_isAtBottom =
+			this.bottomMessage == null ||
+			this.bottomMessage.itemid === this.id_veryBottomMessage;
+		//const needsUpdate =
+		//	new_isAtTop != this.#isAtTop || new_isAtBottom != this.#isAtBottom;
 		this.#isAtBottom = new_isAtBottom;
 		this.#isAtTop = new_isAtTop;
+		//if (needsUpdate) {
+		//	this.refreshFunction && this.refreshFunction();
+		//}
+		/* -------------------------------------------------------------------------- */
 	}
 
 	/* --------------------------------- getters -------------------------------- */
@@ -323,12 +295,7 @@ export class ChatManager {
 	get bottomMessageDate(): number | undefined {
 		return this.bottomMessage?._created_time ?? undefined;
 	}
-	get topMessageIndex(): number {
-		return this.topMessage?.index ?? -1;
-	}
-	get bottomMessageIndex(): number {
-		return this.bottomMessage?.index ?? -1;
-	}
+
 	get topMessage(): ChatItem | undefined {
 		if (this.currentItems.length === 0) return undefined;
 		return this.currentItems[0];
@@ -343,10 +310,10 @@ export class ChatManager {
 	}
 
 	get referenceTop(): number {
-		return this.referenceItem?.topDistance || 0;
+		return this.referenceItem?.topDistance || Number.NaN;
 	}
 	get referenceLastTop(): number {
-		return this.referenceItem?.lastTop || 0;
+		return this.referenceItem?.lastTop || Number.NaN;
 	}
 	get isAtTop() {
 		return this.#isAtTop;
