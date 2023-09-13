@@ -8,11 +8,8 @@ import ChatManager, {
 	ChangeOperation,
 } from '../classes/ChatManager';
 
-const WRAPPER_HEIGHT = 400;
-const WRAPPER_BUFFER_HEIGHT = 900;
 
-const DEFAULT_BATCH_SIZE = 20;
-const MAX_ITEMS = 80;
+  
 
 type VirtualScrollerProps = {
 	newItems?: any[];
@@ -21,6 +18,7 @@ type VirtualScrollerProps = {
 	BottomContent?: React.ElementType<any>;
 	TopContent?: React.ElementType<any>;
 	loadFunction: LoadFunctionType;
+	managerRef?: React.MutableRefObject<ChatManager | null>;
 };
 
 type ItemType = {
@@ -37,27 +35,41 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	const outerRef = React.useRef<HTMLDivElement>(null);
 	const bottomElementRef = React.useRef<HTMLDivElement>(null);
 
-	const distanceToBottom = React.useRef<number>(0);
-	const distanceToTop = React.useRef<number>(0);
 	const loadingFlag = React.useRef<boolean>(false);
 
+	const [updateKey, forceUpdate] = React.useReducer((x) => (x + 1) % 100, 0);
 	const [currentItems, set_currentItems] = React.useState<ChatItem[]>([]);
 	const [chatManager, set_chatManager] = React.useState(new ChatManager());
 
+	if (props.managerRef) props.managerRef.current = chatManager;
 	/* -------------------------------------------------------------------------- */
 	/*                         load new items when needed                         */
 	/* -------------------------------------------------------------------------- */
 	React.useLayoutEffect(() => {
 		chatManager.set_loadFunction(props.loadFunction);
-		chatManager.set_setItemsFunction((r) => set_currentItems(r));
+		chatManager.set_setItemsFunction(setItems);
+		chatManager.set_refreshFunction(forceUpdate);
 	}, []);
-	async function loadItems(direction = 0) {
+
+	async function setItems(items: ChatItem[]) {
+		return await new Promise((resolve) => {
+			set_currentItems((s) => {
+				resolve(items);
+				return items;
+			});
+		});
+	}
+	/* ------------------ load if reaching end or start of page ----------------- */
+	async function checkShouldLoad() {
 		if (loadingFlag.current) return;
-		try {
-			loadingFlag.current = true;
-			await chatManager.loadNextItems(direction);
-		} finally {
-			loadingFlag.current = false;
+		if (chatManager.shouldLoadTop || chatManager.shouldLoadDown) {
+			if (loadingFlag.current) return;
+			try {
+				loadingFlag.current = true;
+				await chatManager.loadIfNeeded();
+			} finally {
+				loadingFlag.current = false;
+			}
 		}
 	}
 
@@ -70,105 +82,74 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	/* -------------------------------------------------------------------------- */
 	/*                               Check load page                              */
 	/* -------------------------------------------------------------------------- */
-	const [isSticky, set_isSticky] = React.useState<boolean>(false);
 
 	function _onScroll(e) {
 		updateDistances();
 		checkShouldLoad();
 	}
 	function updateDistances() {
-		distanceToBottom.current = currentDistanceToBottom(
+		chatManager.distanceToBottom = currentDistanceToBottom(
 			innerRef.current as any,
 			outerRef.current as any
 		);
-		distanceToTop.current = (outerRef.current as any).scrollTop;
-		set_isSticky(distanceToBottom.current < 50);
+		chatManager.distanceToTop = (outerRef.current as any).scrollTop;
+		chatManager.isSticky = chatManager.distanceToBottom < 50;
 	}
 
-	/* ------------------ load if reaching end or start of page ----------------- */
-	function checkShouldLoad() {
-		if (loadingFlag.current) return;
-		if (distanceToTop.current < WRAPPER_BUFFER_HEIGHT && !chatManager.isAtTop) {
-			loadItems(1);
-		} else if (
-			distanceToBottom.current < WRAPPER_BUFFER_HEIGHT &&
-			!chatManager.isAtBottom
-		) {
-			loadItems(-1);
-		}
-	}
-
-	//React.useEffect(() => {
-	//	if (!outerRef.current || !innerRef.current) return;
-	//	if (lastLoadDirection.current == 0) return;
-	//	const keysToDelete = Object.keys(deleteMap);
-	//
-	//	//we wait a litte for the newly created items to calculate their heigts
-	//	//and for our scroller to update its scroll position based on the new items
-	//	setTimeout(() => {
-	//		if (keysToDelete.length > 0) {
-	//			set_deleteMap({});
-	//			set_itemsMap((oldmap) => {
-	//				const newItemsMap = { ...oldmap };
-	//				keysToDelete.forEach((d) => {
-	//					delete newItemsMap[d];
-	//				});
-	//
-	//				return newItemsMap;
-	//			});
-	//			return;
-	//		}
-	//	}, 400);
-	//}, [deleteMap]);
 	/* -------------------------------------------------------------------------- */
 	/*            prevent the scroller from jumping when you add items            */
 	/* -------------------------------------------------------------------------- */
 	React.useLayoutEffect(() => {
 		if (!outerRef.current || !innerRef.current) return;
 		const itemDelta = chatManager.lastCountChange;
-		const isAdding = itemDelta > 0;
-		const lld = chatManager.lastLoadDirection;
-		const lcd = chatManager.lastChangeDirection;
 		const lastOp = chatManager.lastOperation;
+		if (itemDelta === 0 || lastOp == ChangeOperation.NONE) return;
 
-		if (itemDelta === 0 || lcd === LoadDirection.NONE || lastOp == ChangeOperation.NONE)
-			return;
+		// console.log('manager jump:', jumpDistance);
+		// let _stickToTop = false;
+		// let _stickToBot = false;
 
-		let _stickToTop = false;
-		let _stickToBot = false;
-		if (lastOp === ChangeOperation.ADD) {
-			if (lld === LoadDirection.DOWN) {
-				//if adding few items to bottom of the list we can stick to the bottom
-				if (isSticky && itemDelta < 5) _stickToBot = true;
-			} else if (lld === LoadDirection.UP) _stickToBot = true; //adding items to top, stick to bot
-		} else {
-			if (lcd === LoadDirection.DOWN) {
-				//removing from bottom of the list. stick to top
-				_stickToTop = true;
-			}
-		}
-		// console.log('lastOp', lastOp, 'lcd', lcd, 'lld', lld);
-		// console.log('ChangeOperation.ADD', ChangeOperation.ADD);
-		// console.log('stickToBot', _stickToBot, '_stickToTop', _stickToTop);
-		if (_stickToBot) {
+		// switch (lastOp) {
+		// 	case ChangeOperation.ADD_UP:
+		// 		//adding items to top, stick to bot
+		// 		_stickToBot = true;
+		// 		break;
+		// 	case ChangeOperation.ADD_DOWN:
+		// 		//if adding few items to bottom of the list we can stick to the bottom
+		// 		if (chatManager.isSticky && itemDelta < 5) _stickToBot = true;
+		// 		break;
+		// 	case ChangeOperation.REMOVE_UP:
+		// 		break;
+		// 	case ChangeOperation.REMOVE_DOWN:
+		// 		//removing from bottom of the list. stick to top
+		// 		_stickToTop = true;
+		// 		break;
+		// }
+
+		if (chatManager.isSticky && itemDelta < 5) {
 			stickToBottom();
-		} else if (_stickToTop) {
-			stickToTop();
+		} else {
+			const jumpDistance = chatManager.referenceTop - chatManager.referenceLastTop;
+			const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
+			(outerRef.current as any).scrollTop = newScrollPosition;
 		}
-	}, [currentItems]);
 
+		// //console.log('isSticky', chatManager.isSticky);
+		// //console.log('lastOp', lastOp, 'lcd', lcd, 'lld', lld);
+		// // console.log('stickToBot', _stickToBot, '_stickToTop', _stickToTop);
+		// if (_stickToBot) {
+		// 	stickToBottom();
+		// } else if (_stickToTop) {
+		// 	stickToTop();
+		// }
+	}, [currentItems]);
 	function stickToBottom() {
 		/* ---------------------- keep same distance to bottom ---------------------- */
 		const jumpDistance =
 			currentDistanceToBottom(innerRef.current as any, outerRef.current as any) -
-			distanceToBottom.current;
+			chatManager.distanceToBottom;
 		const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
 		(outerRef.current as any).scrollTop = newScrollPosition;
-		// updateDistances();
-	}
-	function stickToTop() {
-		/* ------------------------ keep same distance to top ----------------------- */
-		(outerRef.current as any).scrollTop = distanceToTop.current;
 		// updateDistances();
 	}
 
@@ -182,7 +163,7 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 			className="azchat-filler azchat-virtualContainer"
 			style={
 				{
-					'--WRAPPER_HEIGHT': WRAPPER_HEIGHT,
+					'--WRAPPER_HEIGHT': ChatManager.WRAPPER_HEIGHT,
 				} as any
 			}
 			onScroll={_onScroll}
@@ -199,8 +180,8 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 					)}
 				</ol>
 
-				<div className={'azchat-wrapper' + (chatManager.isAtBottom ? ' gone' : '')}>
-					{props.WrapperContent && <props.WrapperContent />}
+				<div className={'azchat-wrapper'}>
+					{!chatManager.isAtBottom && props.WrapperContent && <props.WrapperContent />}
 				</div>
 				<div ref={bottomElementRef}>
 					{chatManager.isAtBottom && props.BottomContent && <props.BottomContent />}
@@ -220,7 +201,12 @@ function RowRender(props: RowRenderProps) {
 	else content = 'item';
 
 	return (
-		<li key={chatitem.key} id={'message-' + chatitem.key} className={'azchat-item'}>
+		<li
+			ref={(v) => (chatitem.itemRef = v as HTMLElement)}
+			key={chatitem.key}
+			id={'message-' + chatitem.key}
+			className={'azchat-item'}
+		>
 			{content}
 		</li>
 	);

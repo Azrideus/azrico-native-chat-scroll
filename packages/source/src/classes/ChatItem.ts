@@ -6,7 +6,11 @@ export class ChatItem {
 	readonly data: any;
 	readonly _created_date: Date;
 	readonly _created_time: number;
+	private __options = {};
+
+	public isNew: boolean = false;
 	public index: number = -1;
+	public itemRef?: HTMLElement;
 
 	constructor(d: any) {
 		//set the data
@@ -22,6 +26,16 @@ export class ChatItem {
 		this._created_time = this._created_date.getTime();
 	}
 
+	savePosition() {
+		this.__options['lasttop'] = this.topDistance;
+	}
+
+	get topDistance() {
+		return this.itemRef?.getBoundingClientRect().top || 0;
+	}
+	get lastTop() {
+		return this.__options['lasttop'] || Number.NaN;
+	}
 	static getObjectId(inp) {
 		return inp._id ?? inp.id;
 	}

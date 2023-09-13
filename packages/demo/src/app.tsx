@@ -1,7 +1,8 @@
 import React from 'react';
 import VirtualScroller from 'react-chatscroll';
 import examplechats from './examplechats.json';
-  
+import ChatManager from '../../source/src/classes/ChatManager';
+
 let newMessageId = 0;
 
 const itemsInDB = examplechats
@@ -14,7 +15,7 @@ const itemsInDB = examplechats
 			...r,
 		};
 	})
-	.sort((a, b) => b.date.getTime() - a.date.getTime());
+	.sort((a, b) => b.date.getTime() - a.date.getTime()) as any[];
 async function loadItemsFromDB(props: any): Promise<any[]> {
 	const { skip, limit, date } = props;
 	return await new Promise((resolve, reject) => {
@@ -32,14 +33,44 @@ async function loadItemsFromDB(props: any): Promise<any[]> {
 }
 
 export function ExampleChatScroll() {
-	const [newItems, set_newItems] = React.useState<any[]>([]);
 	const [message, set_message] = React.useState('');
+	const managerRef = React.useRef<ChatManager>(null);
+	const timerRef = React.useRef<any>();
+
+	async function addNewMsg(obj) {
+		itemsInDB.unshift(obj);
+		await managerRef.current?.sendNewMessage(obj);
+	}
+	async function addLoop() {
+		const newMsg = {
+			_id: 'new' + newMessageId,
+			user: 'spam',
+			text: 'spam: ' + newMessageId,
+			date: new Date(),
+		};
+		newMessageId++;
+		if (itemsInDB.length > 1000) return;
+		await addNewMsg(newMsg);
+		if (timerRef.current) clearTimeout(timerRef.current);
+		timerRef.current = setTimeout(addLoop, 500);
+	}
+	React.useEffect(() => {
+		//addLoop();
+	}, []);
 	function handleChatSubmit(e) {
-		//e.preventDefault();
-		//const newMsg = makeMsg(message, new Date());
-		//set_newItems((s) => [...s, newMsg]);
-		//set_message('');
-		//return false;
+		e.preventDefault();
+		if (message) {
+			const newMsg = {
+				_id: 'new' + newMessageId++,
+				user: 'me',
+				text: message,
+				date: new Date(),
+			};
+			addNewMsg(newMsg);
+			set_message('');
+		}
+
+		return false;
 	}
 	return (
 		<div
@@ -76,7 +107,7 @@ export function ExampleChatScroll() {
 					}}
 				>
 					<VirtualScroller
-						newItems={newItems}
+						managerRef={managerRef}
 						ItemRender={ItemRender}
 						BottomContent={BottomContent}
 						TopContent={TopContent}
