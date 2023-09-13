@@ -1,13 +1,12 @@
 {
 	"name": "@azrideus/react-chat-scroll",
-	"version": "1.0.0", 
+	"version": "1.0.1",
 	"main": "./src/index",
 	"description": "React Virtualized List for chat app",
 	"author": "Azrideus",
-	"private":false,
-
+	"private": false,
 	"homepage": ".",
-		"scripts": { 
+	"scripts": {
 		"build": "tsc && yarn cp_themes && babel dist --out-dir dist",
 		"test": "jest",
 		"cp_themes": "copyfiles ./src/*/*.css ./dist/",
