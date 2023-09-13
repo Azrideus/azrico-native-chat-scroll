@@ -6,7 +6,7 @@ export class ChatItem {
 	readonly data: any;
 	readonly _created_date: Date;
 	readonly _created_time: number;
-	private __options = {};
+	private __options: any = {};
 
 	public isNew: boolean = false;
 	public itemRef?: HTMLElement;
@@ -34,10 +34,10 @@ export class ChatItem {
 	get lastTop() {
 		return this.__options['lasttop'] || Number.NaN;
 	}
-	static getObjectId(inp) {
+	static getObjectId(inp: any) {
 		return inp._id ?? inp.id;
 	}
-	static getObjectDate(inp) {
+	static getObjectDate(inp: any) {
 		let controlObject = inp;
 		if (controlObject)
 			try {

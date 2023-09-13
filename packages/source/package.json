@@ -1,15 +1,17 @@
 {
 	"name": "@azrideus/react-chat-scroll",
-	"version": "1.0.3",
+	"version": "1.0.5",
 	"main": "dist/index.js",
 	"source": "./index.ts",
 	"description": "React Virtualized List for chat app",
 	"author": "Azrideus",
 	"homepage": ".",
 	"scripts": {
-		"build": "tsc && yarn cp_themes && babel dist --out-dir dist",
-		"test": "jest",
+		"build": "yarn run tsc && yarn run cp_themes && yarn run babel",
+		"tsc": "tsc",
 		"cp_themes": "copyfiles ./src/*/*.css ./dist/",
+		"babel": "babel dist --out-dir dist",
+		"test": "jest",
 		"publish_default": "npm publish --access public --tag latest;"
 	},
 	"peerDependencies": {

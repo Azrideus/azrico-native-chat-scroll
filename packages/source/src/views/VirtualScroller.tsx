@@ -83,7 +83,7 @@ export function VirtualScroller(props: VirtualScrollerProps) {
 	/*                               Check load page                              */
 	/* -------------------------------------------------------------------------- */
 
-	function _onScroll(e) {
+	function _onScroll(e: any) {
 		updateDistances();
 		checkShouldLoad();
 	}

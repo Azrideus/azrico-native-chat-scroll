@@ -1,7 +1,7 @@
 import React from 'react';
 
 export type sizeResult = { height: number; width: number };
-export function useSize(ref): sizeResult {
+export function useSize(ref: any): sizeResult {
 	const [size, setSize] = React.useState<sizeResult>({
 		height: 0,
 		width: 0,
