@@ -82,6 +82,7 @@ export class ChatManager {
 	 */
 	async sendNewMessage(...msglist: Array<ChatItem | any>) {
 		const messagesToAdd = msglist
+			.flat()
 			.filter((s) => s)
 			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(r)));
 		if (messagesToAdd.length === 0) return;
