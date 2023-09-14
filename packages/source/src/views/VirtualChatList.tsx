@@ -201,7 +201,7 @@ const RowRender = React.memo((props: RowRenderProps) => {
 				item={chatitem.data}
 				nextitem={props.nextitem?.data}
 				previtem={props.previtem?.data}
-				{...props.itemProps}
+				itemProps={props.itemProps}
 			/>
 		</li>
 	);
