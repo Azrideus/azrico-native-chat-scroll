@@ -2,12 +2,11 @@ import React from 'react';
 import VirtualChatList from '@azrideus/react-chat-scroll';
 import examplechats from './examplechats.json';
 import ChatManager from '../../source/src/classes/ChatManager';
-
-let newMessageId = 0;
+ 
 
 const itemsInDB = examplechats.map((r, i) => {
 	return {
-		_id: i,
+		_id: 'oldmsg-' + i,
 		user: r['User Name'],
 		text: r['Content'],
 		date: new Date(r['Date']),
@@ -21,14 +20,14 @@ async function loadItemsFromDB(props: any): Promise<any[]> {
 			let searchedItems: any[] = [...itemsInDB];
 
 			if (_created_date) {
-				if (_created_date.$gt instanceof Date) {
-					const dtTime = _created_date.$gt.getTime();
+				if (_created_date.$gte instanceof Date) {
+					const dtTime = _created_date.$gte.getTime();
 					searchedItems = searchedItems.filter(
 						(s) => (s.date as Date).getTime() >= dtTime
 					);
 				}
-				if (_created_date.$lt instanceof Date) {
-					const dtTime = _created_date.$lt.getTime();
+				if (_created_date.$lte instanceof Date) {
+					const dtTime = _created_date.$lte.getTime();
 					searchedItems = searchedItems.filter(
 						(s) => (s.date as Date).getTime() <= dtTime
 					);
@@ -67,8 +66,9 @@ export function Examplechatscroll() {
 		if (itemsInDB.length > 1000) return;
 		if (!firsttime) {
 			const newMsg = {
+				_id: 'spam-' + itemsInDB.length,
 				user: 'spammer',
-				text: 'spam: ' + ++newMessageId,
+				text: 'spam: ' + itemsInDB.length,
 				date: new Date(),
 			};
 			await addNewMsg(newMsg);
@@ -84,6 +84,7 @@ export function Examplechatscroll() {
 		e.preventDefault();
 		if (message) {
 			const newMsg = {
+				_id: 'new-' + itemsInDB.length,
 				user: 'me',
 				text: message,
 				date: new Date(),

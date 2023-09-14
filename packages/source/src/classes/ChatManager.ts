@@ -23,7 +23,7 @@ export enum ChangeOperation {
 export type SearchQuery = {
 	skip?: number;
 	limit: number;
-	_created_date?: { $lt?: Date; $gt?: Date };
+	_created_date?: { $lte?: Date; $gte?: Date };
 	sort?: any;
 	exclude?: any[];
 };
@@ -63,9 +63,6 @@ export class ChatManager {
 
 	private id_veryTopMessage?: any;
 	private id_veryBottomMessage?: any;
-
-	#isAtBottom: boolean = true;
-	#isAtTop: boolean = false;
 
 	constructor() {}
 
@@ -111,6 +108,10 @@ export class ChatManager {
 		this.currentLoadOperation = this.load_items(loadDir);
 		return await this.currentLoadOperation;
 	}
+	async loadForNewMessages() {
+		this.id_veryBottomMessage = null;
+		await this.loadIfNeeded();
+	}
 
 	/**
 	 * load more items in the given direction
@@ -126,11 +127,11 @@ export class ChatManager {
 		if (direction == LoadDirection.DOWN) {
 			search_query.sort = { _created_date: 1 };
 			if (this.bottomMessage?._created_date)
-				search_query._created_date = { $gt: this.bottomMessage?._created_date };
+				search_query._created_date = { $gte: this.bottomMessage?._created_date };
 		} else {
 			search_query.sort = { _created_date: -1 };
 			if (this.topMessage?._created_date)
-				search_query._created_date = { $lt: this.topMessage?._created_date };
+				search_query._created_date = { $lte: this.topMessage?._created_date };
 		}
 		search_query.exclude = this.currentItems.map((r) => r.itemid);
 
@@ -182,7 +183,7 @@ export class ChatManager {
 		this.currentItems = this.cleanExtraItems(items);
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
-		// console.log('setitems', this.currentItems);
+		//console.log('setitems', this.currentItems);
 		this.check_position();
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
 	}
@@ -264,21 +265,6 @@ export class ChatManager {
 		}
 
 		/* -------------------------------------------------------------------------- */
-
-		/* ----------------------- set the new istop/isbottom ----------------------- */
-		const new_isAtTop =
-			this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
-		const new_isAtBottom =
-			this.bottomMessage == null ||
-			this.bottomMessage.itemid === this.id_veryBottomMessage;
-		//const needsUpdate =
-		//	new_isAtTop != this.#isAtTop || new_isAtBottom != this.#isAtBottom;
-		this.#isAtBottom = new_isAtBottom;
-		this.#isAtTop = new_isAtTop;
-		//if (needsUpdate) {
-		//	this.refreshFunction && this.refreshFunction();
-		//}
-		/* -------------------------------------------------------------------------- */
 	}
 
 	/* --------------------------------- getters -------------------------------- */
@@ -309,10 +295,13 @@ export class ChatManager {
 		return this.referenceItem?.lastTop || Number.NaN;
 	}
 	get isAtTop() {
-		return this.#isAtTop;
+		return this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
 	}
 	get isAtBottom() {
-		return this.#isAtBottom;
+		return (
+			this.bottomMessage == null ||
+			this.bottomMessage.itemid === this.id_veryBottomMessage
+		);
 	}
 
 	get isCloseToTop() {
@@ -326,7 +315,7 @@ export class ChatManager {
 		return this.isCloseToTop && !this.isAtTop;
 	}
 	get shouldLoadDown() {
-		return this.isCloseToBottom && !this.#isAtBottom;
+		return this.isCloseToBottom && !this.isAtBottom;
 	}
 
 	/* number of changed items in the last load */

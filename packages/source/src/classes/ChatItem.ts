@@ -17,7 +17,7 @@ export class ChatItem {
 
 		//get the id from data
 		this.itemid = ChatItem.getObjectId(this.data) || UIDHelper.nextid();
-		this.key = 'msg-' + this.itemid;
+		this.key = String(this.itemid);
 
 		//assign the date
 		this._created_date = ChatItem.getObjectDate(this.data);

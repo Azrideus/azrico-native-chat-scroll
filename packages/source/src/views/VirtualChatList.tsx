@@ -16,6 +16,7 @@ type VirtualScrollerProps = {
 	TopContent?: React.ElementType<any>;
 	loadFunction: LoadFunctionType;
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
+	itemProps?: any;
 };
 
 /**
@@ -149,7 +150,12 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 
 				<ol>
 					{currentItems.map((r, index) =>
-						RowRender({ ...props, chatitem: r, index: index })
+						RowRender({
+							...props,
+							itemProps: props.itemProps || {},
+							chatitem: r,
+							index: index,
+						})
 					)}
 				</ol>
 				{!chatManager.isAtBottom && (
@@ -172,7 +178,8 @@ function RowRender(props: RowRenderProps) {
 	let content: any = null;
 	const chatitem = props.chatitem;
 
-	if (props.ItemRender) content = <props.ItemRender item={chatitem.data} />;
+	if (props.ItemRender)
+		content = <props.ItemRender item={chatitem.data} {...props.itemProps} />;
 	else content = 'item';
 
 	return (
