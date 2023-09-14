@@ -149,14 +149,22 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 				)}
 
 				<ol>
-					{currentItems.map((r, index) =>
-						RowRender({
-							...props,
-							itemProps: props.itemProps || {},
-							chatitem: r,
-							index: index,
-						})
-					)}
+					{currentItems.map((r, index) => {
+						let nextitem =
+							index + 2 < currentItems.length ? currentItems[index + 1] : undefined;
+						let previtem = index - 2 > 0 ? currentItems[index - 1] : undefined;
+
+						return (
+							<RowRender
+								{...props}
+								key={r.key}
+								itemProps={props.itemProps}
+								item={r}
+								nextitem={nextitem}
+								previtem={previtem}
+							/>
+						);
+					})}
 				</ol>
 				{!chatManager.isAtBottom && (
 					<div className={'azchat-wrapper'}>
@@ -172,16 +180,16 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	);
 }
 
-type RowRenderProps = VirtualScrollerProps & { chatitem: ChatItem; index: number };
+type RowRenderProps = VirtualScrollerProps & {
+	item: ChatItem;
+	nextitem?: ChatItem;
+	previtem?: ChatItem;
+};
 
-function RowRender(props: RowRenderProps) {
+const RowRender = React.memo((props: RowRenderProps) => {
 	let content: any = null;
-	const chatitem = props.chatitem;
-
-	if (props.ItemRender)
-		content = <props.ItemRender item={chatitem.data} {...props.itemProps} />;
-	else content = 'item';
-
+	const chatitem = props.item;
+	if (!props.ItemRender) return null;
 	return (
 		<li
 			ref={(v) => (chatitem.itemRef = v as HTMLElement)}
@@ -189,8 +197,14 @@ function RowRender(props: RowRenderProps) {
 			id={'message-' + chatitem.key}
 			className={'azchat-item'}
 		>
-			{content}
+			<props.ItemRender
+				item={chatitem.data}
+				nextitem={props.nextitem?.data}
+				previtem={props.previtem?.data}
+				{...props.itemProps}
+			/>
 		</li>
 	);
-}
+});
+ 
 export default VirtualChatList;
