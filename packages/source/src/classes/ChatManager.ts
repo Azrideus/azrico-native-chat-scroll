@@ -186,6 +186,8 @@ export class ChatManager {
 		this.lastCount = this.currentItems.length;
 		//console.log('setitems', this.currentItems);
 		this.check_position();
+		 this.update_next_prev_items(); 
+	
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
 	}
 
@@ -217,6 +219,34 @@ export class ChatManager {
 			resultItems.splice(rmStartIndex);
 		}
 		return resultItems;
+	}
+	
+	private update_next_prev_items() {
+		const maxindex = this.currentItems.length - 1;  
+		  this.currentItems.map((r, i) => {
+		  r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
+		  r.previtem = i != 0 ? this.currentItems[i - 1] : undefined; 
+		  });
+		
+		// let breakNextLoop = false;
+		// if (this.lastOperation === ChangeOperation.ADD_UP)
+		// 	for (let i = 0; i < this.currentItems.length; i++) {
+		// 		if (breakNextLoop) break;
+		// 		const r = this.currentItems[i]; 
+		// 		if (r.nextitem && r.previtem) breakNextLoop = true; 
+		// 		 
+		// 		r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
+		// 		r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
+		// 	}
+		// else if(this.lastOperation === ChangeOperation.ADD_DOWN)
+		// 	for (let i = this.currentItems.length - 1; i >= 0; i--) { 
+		// 		if (breakNextLoop) break;
+		// 		const r = this.currentItems[i];  
+		// 		if (r.nextitem && r.previtem) breakNextLoop = true; 
+		// 		
+		// 		r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
+		// 		r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
+		// 	}  
 	}
 
 	private before_update() {

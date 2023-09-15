@@ -8,6 +8,9 @@ export class ChatItem {
 	readonly _created_time: number;
 	private __options: any = {};
 
+	public previtem?: ChatItem;
+	public nextitem?: ChatItem;
+
 	public isNew: boolean = false;
 	public itemRef?: HTMLElement;
 
