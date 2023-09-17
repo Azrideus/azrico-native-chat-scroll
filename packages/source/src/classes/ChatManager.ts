@@ -40,6 +40,7 @@ export class ChatManager {
 	private referenceItem: ChatItem | undefined;
 
 	private currentItems: ChatItem[] = [];
+	private currentItemsMap: { [key: string]: ChatItem } = {};
 
 	private isLastLoadFromDB: boolean = true;
 	public isSticky: boolean = true;
@@ -85,12 +86,18 @@ export class ChatManager {
 			.flat()
 			.filter((s) => s)
 			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(r)));
-		if (messagesToAdd.length === 0) return;
+
+		//make sure the messages are not already loaded :
+		const newMessagesToAdd = messagesToAdd.filter(
+			(s) => this.currentItemsMap[s.itemid] == null
+		);
+
+		if (newMessagesToAdd.length === 0) return;
 		if (this.isAtBottom) {
 			//we are at the bottom of the list, new messages should be added
 
 			// console.log('add Message:', messagesToAdd);
-			await this.add_items_to_list(messagesToAdd, LoadDirection.DOWN, false);
+			await this.add_items_to_list(newMessagesToAdd, LoadDirection.DOWN, false);
 		}
 	}
 
@@ -182,12 +189,17 @@ export class ChatManager {
 	private async setItems(items: ChatItem[]) {
 		this.before_update();
 		this.currentItems = this.cleanExtraItems(items);
+
+		//set the item map
+		this.currentItemsMap = {};
+		this.currentItems.forEach((r) => (this.currentItemsMap[r.itemid] = r));
+
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
 		//console.log('setitems', this.currentItems);
 		this.check_position();
-		 this.update_next_prev_items(); 
-	
+		this.update_next_prev_items();
+
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
 	}
 
@@ -220,33 +232,33 @@ export class ChatManager {
 		}
 		return resultItems;
 	}
-	
+
 	private update_next_prev_items() {
-		const maxindex = this.currentItems.length - 1;  
-		  this.currentItems.map((r, i) => {
-		  r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
-		  r.previtem = i != 0 ? this.currentItems[i - 1] : undefined; 
-		  });
-		
+		const maxindex = this.currentItems.length - 1;
+		this.currentItems.map((r, i) => {
+			r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
+			r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
+		});
+
 		// let breakNextLoop = false;
 		// if (this.lastOperation === ChangeOperation.ADD_UP)
 		// 	for (let i = 0; i < this.currentItems.length; i++) {
 		// 		if (breakNextLoop) break;
-		// 		const r = this.currentItems[i]; 
-		// 		if (r.nextitem && r.previtem) breakNextLoop = true; 
-		// 		 
+		// 		const r = this.currentItems[i];
+		// 		if (r.nextitem && r.previtem) breakNextLoop = true;
+		//
 		// 		r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
 		// 		r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
 		// 	}
 		// else if(this.lastOperation === ChangeOperation.ADD_DOWN)
-		// 	for (let i = this.currentItems.length - 1; i >= 0; i--) { 
+		// 	for (let i = this.currentItems.length - 1; i >= 0; i--) {
 		// 		if (breakNextLoop) break;
-		// 		const r = this.currentItems[i];  
-		// 		if (r.nextitem && r.previtem) breakNextLoop = true; 
-		// 		
+		// 		const r = this.currentItems[i];
+		// 		if (r.nextitem && r.previtem) breakNextLoop = true;
+		//
 		// 		r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
 		// 		r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
-		// 	}  
+		// 	}
 	}
 
 	private before_update() {
