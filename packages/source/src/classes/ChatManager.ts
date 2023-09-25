@@ -80,8 +80,9 @@ export class ChatManager {
 	/**
 	 * add a new message to the bottom of the list
 	 * @param msglist
+	 * @returns if the message was added
 	 */
-	async sendNewMessage(...msglist: Array<ChatItem | any>) {
+	async sendNewMessage(...msglist: Array<ChatItem | any>): Promise<boolean> {
 		const messagesToAdd = msglist
 			.flat()
 			.filter((s) => s)
@@ -92,13 +93,21 @@ export class ChatManager {
 			(s) => this.currentItemsMap[s.itemid] == null
 		);
 
-		if (newMessagesToAdd.length === 0) return;
+		if (newMessagesToAdd.length === 0) return false;
 		if (this.isAtBottom) {
 			//we are at the bottom of the list, new messages should be added
 
 			// console.log('add Message:', messagesToAdd);
-			await this.add_items_to_list(newMessagesToAdd, LoadDirection.DOWN, false);
+			const addCount = await this.add_items_to_list(
+				newMessagesToAdd,
+				LoadDirection.DOWN,
+				false
+			);
+			//if a new message is added the bottom message must change:
+			this.updateBottomMessage();
+			return addCount > 0;
 		}
+		return false;
 	}
 
 	/**
@@ -169,7 +178,7 @@ export class ChatManager {
 		items_to_add: ChatItem[],
 		direction: LoadDirection = LoadDirection.UP,
 		isFromDB: boolean = true
-	) {
+	): Promise<number> {
 		this.#lastOperation =
 			direction === LoadDirection.UP ? ChangeOperation.ADD_UP : ChangeOperation.ADD_DOWN;
 
@@ -184,9 +193,10 @@ export class ChatManager {
 			nextItems.push(...items_to_add);
 		}
 		await this.setItems(nextItems);
+		return items_to_add.length;
 	}
 
-	private async setItems(items: ChatItem[]) {
+	private async setItems(items: ChatItem[]): Promise<number> {
 		this.before_update();
 		this.currentItems = this.cleanExtraItems(items);
 
@@ -201,6 +211,7 @@ export class ChatManager {
 		this.update_next_prev_items();
 
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
+		return this.currentItems.length;
 	}
 
 	/**
@@ -275,41 +286,42 @@ export class ChatManager {
 	 * check if we reached the bottom or top of the list
 	 */
 	private check_position() {
-		/* ---------------- loading less than limit means end of chat --------------- */
-		//we load less items than limit -> we have reached the top/bottom of the chat
-		if (this.isLastLoadFromDB) {
-			if (this.#lastDBLoad < BATCH_SIZE) {
-				//console.log('loaded less items than expected. updating max/min');
-				if (this.lastLoadDirection === LoadDirection.DOWN)
-					this.id_veryBottomMessage = this.bottomMessage?.itemid;
-				else if (this.lastLoadDirection === LoadDirection.UP)
-					this.id_veryTopMessage = this.topMessage?.itemid;
-			} else if (!this.id_veryBottomMessage) {
-				//if bottom message is not set yet, set it to the current bottom item
-				this.id_veryBottomMessage = this.bottomMessage?.itemid;
-			}
+		if (!this.isLastLoadFromDB) {
+			this.updateBottomMessage();
+			return;
 		}
 
 		/* -------------------------------------------------------------------------- */
+		/*                          Loading Something from DB                         */
+		/* -------------------------------------------------------------------------- */
 
-		/* -------------- clear top/bot if we are in middle of the list ------------- */
-		// so we can correctly detect new messages that are added below the veryBottomMessage
-		if (this.isLastLoadFromDB) {
+		if (!this.id_veryBottomMessage) {
+			//if bottom message is not set yet (first load), set it to the current bottom item
+			//if the bottom message id is -1 this will not run !
+			this.updateBottomMessage();
+		}
+
+		/* ---------------- loading less than limit means end of chat --------------- */
+		//we load less items than limit -> we have reached the top/bottom of the chat
+		if (this.#lastDBLoad < BATCH_SIZE) {
+			//console.log('loaded less items than expected. updating max/min');
+			if (this.lastLoadDirection === LoadDirection.DOWN) this.updateBottomMessage();
+			else if (this.lastLoadDirection === LoadDirection.UP)
+				this.id_veryTopMessage = this.topMessage?.itemid;
+		} else {
+			// clear top/bot if we are in middle of the list
+			// so we can correctly detect new messages that are added below the veryBottomMessage
 			if (this.id_veryBottomMessage != this.bottomMessage?.itemid) {
 				this.id_veryBottomMessage = -1;
-				//console.log('clear very bottom message');
 			}
 			if (this.id_veryTopMessage != this.topMessage?.itemid) {
 				this.id_veryTopMessage = -1;
-				//console.log('clear very top message');
 			}
-		} else {
-			this.id_veryBottomMessage = this.bottomMessage?.itemid;
 		}
-
-		/* -------------------------------------------------------------------------- */
 	}
-
+	private updateBottomMessage() {
+		this.id_veryBottomMessage = this.bottomMessage?.itemid;
+	}
 	/* --------------------------------- getters -------------------------------- */
 	get topMessageDate(): number | undefined {
 		return this.topMessage?._created_time ?? undefined;

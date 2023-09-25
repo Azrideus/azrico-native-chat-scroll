@@ -147,7 +147,7 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 			<div ref={innerRef} className={'azchat-inner-container ' + props.innerClassName}>
 				{chatManager.isAtTop && props.TopContent && <props.TopContent />}
 				{!chatManager.isAtTop && (
-					<div className={'azchat-wrapper'}>
+					<div className={'azchat-wrapper wrapper-top'}>
 						{!chatManager.isAtTop && props.WrapperContent && <props.WrapperContent />}
 					</div>
 				)}
@@ -167,7 +167,7 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 					})}
 				</ol>
 				{!chatManager.isAtBottom && (
-					<div className={'azchat-wrapper'}>
+					<div className={'azchat-wrapper wrapper-bottom'}>
 						{props.WrapperContent && <props.WrapperContent />}
 					</div>
 				)}
