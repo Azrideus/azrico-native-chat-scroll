@@ -1,3 +1,4 @@
+import { Ref } from 'react';
 import { UIDHelper } from './UIDHelper';
 
 export type ItemData = any;
@@ -13,7 +14,7 @@ export class ChatItem {
 	public nextitem?: ChatItem;
 
 	public isNew: boolean = false;
-	public itemRef?: HTMLElement;
+	public itemref?: React.MutableRefObject<any>;
 
 	constructor(d: ItemData) {
 		//set the data
@@ -33,7 +34,7 @@ export class ChatItem {
 	}
 
 	get topDistance() {
-		return this.itemRef?.getBoundingClientRect().top || 0;
+		return this.itemref?.current?.getBoundingClientRect().top || 0;
 	}
 	get lastTop() {
 		return this.__options['lasttop'] || Number.NaN;

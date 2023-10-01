@@ -194,20 +194,21 @@ type RowRenderProps = VirtualScrollerProps & {
 };
 
 const RowRender = React.memo((props: RowRenderProps) => {
-	let content: any = null;
-	const chatitem = props.item;
-	if (!props.ItemRender) return null;
+	
+	const itemref = React.useRef<any>();
 
+	const chatitem = props.item;
+	chatitem.itemref = itemref;
 	return (
 		<li
-			ref={(v) => (chatitem.itemRef = v as HTMLElement)}
+			ref={itemref}
 			key={chatitem.key}
 			id={'msg-' + chatitem.key}
 			className={'azchat-item'}
 		>
 			<props.ItemRender
+				itemref={itemref}
 				item={chatitem.data}
-				itemref={chatitem.itemRef}
 				nextitem={props.nextitem?.data}
 				previtem={props.previtem?.data}
 				itemProps={props.itemProps}
