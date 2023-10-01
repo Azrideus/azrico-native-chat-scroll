@@ -1,4 +1,4 @@
-import { ChatItem } from './ChatItem';
+import { ChatItem, ItemData } from './ChatItem';
 import { UIDHelper } from './UIDHelper';
 
 //max number of items we keep in cache
@@ -27,7 +27,7 @@ export type SearchQuery = {
 	sort?: any;
 	exclude?: any[];
 };
-export type LoadFunctionType = (props: SearchQuery) => Promise<any[]> | any[];
+export type LoadFunctionType = (props: SearchQuery) => Promise<ItemData[]> | ItemData[];
 export type RefreshFunctionType = () => any;
 
 type SetItemsFunctionType = (items: ChatItem[]) => any;

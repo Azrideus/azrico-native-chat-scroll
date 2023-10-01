@@ -1,16 +1,17 @@
 import '../styles/styles.css';
 import React from 'react';
 import { useSize, currentDistanceToBottom, sizeResult } from '../classes/SizeHelper';
-import { ChatItem } from '../classes/ChatItem';
+import { ChatItem, ItemData } from '../classes/ChatItem';
 import ChatManager, {
 	LoadFunctionType,
 	LoadDirection,
 	ChangeOperation,
 } from '../classes/ChatManager';
 
+type ItemPropsType = any;
 type VirtualScrollerProps = {
-	newItems?: any[];
-	ItemRender: React.ElementType<any>;
+	newItems?: ItemData[];
+	ItemRender: React.ElementType<ItemRenderProps>;
 	WrapperContent?: React.ElementType<any>;
 	BottomContent?: React.ElementType<any>;
 	TopContent?: React.ElementType<any>;
@@ -18,9 +19,15 @@ type VirtualScrollerProps = {
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 	className?: string;
 	innerClassName?: string;
-	itemProps?: any;
+	itemProps?: ItemPropsType;
 };
-
+export type ItemRenderProps = {
+	item: ItemData;
+	nextitem: ItemData;
+	previtem: ItemData;
+	itemref: any;
+	itemProps: ItemPropsType;
+};
 /**
  * Advanced Virtual scrolling
  * @param props
@@ -200,6 +207,7 @@ const RowRender = React.memo((props: RowRenderProps) => {
 		>
 			<props.ItemRender
 				item={chatitem.data}
+				itemref={chatitem.itemRef}
 				nextitem={props.nextitem?.data}
 				previtem={props.previtem?.data}
 				itemProps={props.itemProps}

@@ -1,6 +1,6 @@
 {
 	"name": "@azrideus/react-chat-scroll",
-	"version": "1.1.0-alhpa.8",
+	"version": "1.1.0-alhpa.10",
 	"main": "dist/index.js",
 	"source": "./index.ts",
 	"description": "React Virtualized List for chat app",

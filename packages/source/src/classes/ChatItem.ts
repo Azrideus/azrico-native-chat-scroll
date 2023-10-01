@@ -1,9 +1,10 @@
 import { UIDHelper } from './UIDHelper';
 
+export type ItemData = any;
 export class ChatItem {
 	readonly key: string;
 	readonly itemid: string;
-	readonly data: any;
+	readonly data: ItemData;
 	readonly _created_date: Date;
 	readonly _created_time: number;
 	private __options: any = {};
@@ -14,7 +15,7 @@ export class ChatItem {
 	public isNew: boolean = false;
 	public itemRef?: HTMLElement;
 
-	constructor(d: any) {
+	constructor(d: ItemData) {
 		//set the data
 		this.data = d;
 
