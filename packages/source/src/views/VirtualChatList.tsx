@@ -18,6 +18,7 @@ type VirtualScrollerProps = {
 	loadFunction: LoadFunctionType;
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 	className?: string;
+	itemClassName?: string;
 	innerClassName?: string;
 	itemProps?: ItemPropsType;
 };
@@ -27,6 +28,7 @@ export type ItemRenderProps = {
 	previtem: ItemData;
 	itemref: any;
 	itemProps: ItemPropsType;
+	chatitem: ChatItem;
 };
 /**
  * Advanced Virtual scrolling
@@ -163,7 +165,8 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 					{currentItems.map((r, index) => {
 						return (
 							<RowRender
-								{...props}
+								className={props.itemClassName}
+								ItemRender={props.ItemRender}
 								key={r.key}
 								itemProps={props.itemProps}
 								item={r}
@@ -187,14 +190,16 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	);
 }
 
-type RowRenderProps = VirtualScrollerProps & {
+type RowRenderProps = {
 	item: ChatItem;
 	nextitem?: ChatItem;
 	previtem?: ChatItem;
+	itemProps?: ItemPropsType;
+	className?: string;
+	ItemRender: React.ElementType<ItemRenderProps>;
 };
 
 const RowRender = React.memo((props: RowRenderProps) => {
-	
 	const itemref = React.useRef<any>();
 
 	const chatitem = props.item;
@@ -204,9 +209,10 @@ const RowRender = React.memo((props: RowRenderProps) => {
 			ref={itemref}
 			key={chatitem.key}
 			id={'msg-' + chatitem.key}
-			className={'azchat-item'}
+			className={'azchat-item' + props.className ? ` ${props.className}` : ''}
 		>
 			<props.ItemRender
+				chatitem={chatitem}
 				itemref={itemref}
 				item={chatitem.data}
 				nextitem={props.nextitem?.data}
