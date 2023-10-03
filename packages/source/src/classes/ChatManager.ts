@@ -78,6 +78,21 @@ export class ChatManager {
 	}
 
 	/**
+	 * delete the given message from the list
+	 * @param msg
+	 */
+	async deleteMessage(msg: ChatItem | ItemData) {
+		const msgid = msg instanceof ChatItem ? msg.itemid : msg._id;
+		const messagesToDelete = this.currentItemsMap[msgid];
+		if (messagesToDelete) {
+			const rmIndex = this.currentItems.findIndex((s) => s === messagesToDelete);
+			//
+			const newArr = [...this.currentItems];
+			newArr.splice(rmIndex, 1);
+			await this.setItems(newArr);
+		}
+	}
+	/**
 	 * add a new message to the bottom of the list
 	 * @param msglist
 	 * @returns if the message was added
@@ -86,7 +101,7 @@ export class ChatManager {
 		const messagesToAdd = msglist
 			.flat()
 			.filter((s) => s)
-			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(r)));
+			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
 
 		//make sure the messages are not already loaded :
 		const newMessagesToAdd = messagesToAdd.filter(
@@ -163,7 +178,7 @@ export class ChatManager {
 
 		/* ------------------------ convert items to ChatItem ----------------------- */
 		let final_chats = loaded_items
-			.map((r, i) => new ChatItem(r))
+			.map((r, i) => new ChatItem(this, r))
 			/* -------- first sort in inverse so we can assign Indexes correctly -------- */
 			.sort((a, b) => b._created_time - a._created_time);
 

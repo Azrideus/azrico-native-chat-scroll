@@ -170,6 +170,7 @@ function ItemRender(props: any) {
 	const item = props.item;
 	const previtem = props.previtem;
 	if (!item) return <div>item</div>;
+ 
 
 	const isByMe = item.user === 'me';
 	const needProfile = previtem?.user != item.user;
@@ -194,19 +195,22 @@ function ItemRender(props: any) {
 					padding: '5px',
 				}}
 			>
-				{needProfile && (
-					<div
-						style={{
-							display: 'flex',
-							flexDirection: 'row',
-							gap: 5,
-							alignItems: 'center',
-						}}
-					>
-						<img src={item['Avatar URL']} style={{ height: 32, width: 32 }}></img>
-						<b>{item.user}</b>
-					</div>
-				)}
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'row',
+						gap: 5,
+						alignItems: 'center',
+					}}
+				>
+					{needProfile && (
+						<>
+							<img src={item['Avatar URL']} style={{ height: 32, width: 32 }}></img>
+							<b>{item.user}</b>
+						</>
+					)}
+					<button onClick={() => props.chatitem.deleteFromList()}>delete</button>
+				</div>
 
 				<p style={{ whiteSpace: 'pre-line' }}>{item.text}</p>
 				<p>{formatDate(item.date)}</p>

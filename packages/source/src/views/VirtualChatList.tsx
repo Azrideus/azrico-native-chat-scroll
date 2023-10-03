@@ -22,14 +22,7 @@ type VirtualScrollerProps = {
 	innerClassName?: string;
 	itemProps?: ItemPropsType;
 };
-export type ItemRenderProps = {
-	item: ItemData;
-	nextitem: ItemData;
-	previtem: ItemData;
-	itemref: any;
-	itemProps: ItemPropsType;
-	chatitem: ChatItem;
-};
+
 /**
  * Advanced Virtual scrolling
  * @param props
@@ -198,7 +191,14 @@ type RowRenderProps = {
 	className?: string;
 	ItemRender: React.ElementType<ItemRenderProps>;
 };
-
+export type ItemRenderProps = {
+	item: ItemData;
+	nextitem: ItemData;
+	previtem: ItemData;
+	itemref: any;
+	itemProps: ItemPropsType;
+	chatitem: ChatItem;
+};
 const RowRender = React.memo((props: RowRenderProps) => {
 	const itemref = React.useRef<any>();
 
@@ -212,8 +212,8 @@ const RowRender = React.memo((props: RowRenderProps) => {
 			className={'azchat-item' + props.className ? ` ${props.className}` : ''}
 		>
 			<props.ItemRender
-				chatitem={chatitem}
 				itemref={itemref}
+				chatitem={chatitem}
 				item={chatitem.data}
 				nextitem={props.nextitem?.data}
 				previtem={props.previtem?.data}

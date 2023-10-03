@@ -1,5 +1,6 @@
 import { Ref } from 'react';
 import { UIDHelper } from './UIDHelper';
+import ChatManager from './ChatManager';
 
 export type ItemData = any;
 export class ChatItem {
@@ -8,6 +9,8 @@ export class ChatItem {
 	readonly data: ItemData;
 	readonly _created_date: Date;
 	readonly _created_time: number;
+	readonly managerClass: ChatManager;
+
 	private __options: any = {};
 
 	public previtem?: ChatItem;
@@ -16,8 +19,9 @@ export class ChatItem {
 	public isNew: boolean = false;
 	public itemref?: React.MutableRefObject<any>;
 
-	constructor(d: ItemData) {
+	constructor(mng: ChatManager, d: ItemData) {
 		//set the data
+		this.managerClass = mng;
 		this.data = d;
 
 		//get the id from data
@@ -31,6 +35,10 @@ export class ChatItem {
 
 	savePosition() {
 		this.__options['lasttop'] = this.topDistance;
+	}
+	async deleteFromList() {
+		console.log('deleteFromList');
+		return await this.managerClass.deleteMessage(this);
 	}
 
 	get topDistance() {
