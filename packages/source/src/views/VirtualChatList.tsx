@@ -209,7 +209,7 @@ const RowRender = React.memo((props: RowRenderProps) => {
 			ref={itemref}
 			key={chatitem.key}
 			id={'msg-' + chatitem.key}
-			className={'azchat-item' + props.className ? ` ${props.className}` : ''}
+			className={`azchat-item ${props.className || ''}`}
 		>
 			<props.ItemRender
 				itemref={itemref}
