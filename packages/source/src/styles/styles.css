@@ -31,6 +31,6 @@
 	background-color: transparent;
 	height: calc(var(--WRAPPER_HEIGHT) * 1px);
 }
-.gone {
+.azchat-gone {
 	display: none;
 }
