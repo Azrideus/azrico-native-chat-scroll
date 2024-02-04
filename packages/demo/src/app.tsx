@@ -1,15 +1,12 @@
 import React from 'react';
-import VirtualChatList from '@azrideus/react-chat-scroll';
-import ChatManager from '../../source/src/classes/ChatManager';
-import {
-	loadExampleChats,
-	addExampleChat,
-	getExampleChatLenght,
-} from '../../source/src/example/example_loader';
+import VirtualChatList, {
+	ChatManager,
+	ExampleChatLoader,
+} from '@azrideus/react-chat-scroll';
 
 /* ------------------------------ initial chats ----------------------------- */
 import examplechats from './examplechats.json';
-examplechats.forEach(addExampleChat);
+examplechats.forEach(ExampleChatLoader.addExampleChat);
 
 export function Examplechatscroll() {
 	const [message, set_message] = React.useState('');
@@ -17,16 +14,16 @@ export function Examplechatscroll() {
 	const timerRef = React.useRef<any>();
 
 	async function addNewMsg(obj: any) {
-		addExampleChat(obj);
+		ExampleChatLoader.addExampleChat(obj);
 		await managerRef.current?.sendNewMessage(obj);
 	}
 	async function addLoop(firsttime = false) {
-		if (getExampleChatLenght() > 1000) return;
+		if (ExampleChatLoader.getExampleChatLenght() > 1000) return;
 		if (!firsttime) {
 			const newMsg = {
-				_id: 'spam-' + getExampleChatLenght(),
+				_id: 'spam-' + ExampleChatLoader.getExampleChatLenght(),
 				user: 'spammer',
-				text: 'spam: ' + getExampleChatLenght(),
+				text: 'spam: ' + ExampleChatLoader.getExampleChatLenght(),
 				date: new Date(),
 			};
 			await addNewMsg(newMsg);
@@ -42,7 +39,7 @@ export function Examplechatscroll() {
 		e.preventDefault();
 		if (message) {
 			const newMsg = {
-				_id: 'new-' + getExampleChatLenght(),
+				_id: 'new-' + ExampleChatLoader.getExampleChatLenght(),
 				user: 'me',
 				text: message,
 				date: new Date(),
@@ -93,7 +90,7 @@ export function Examplechatscroll() {
 						BottomContent={BottomContent}
 						TopContent={TopContent}
 						WrapperContent={LoadingArea}
-						loadFunction={loadExampleChats}
+						loadFunction={ExampleChatLoader.loadExampleChats}
 						// batchSize={30}
 					/>
 				</div>
