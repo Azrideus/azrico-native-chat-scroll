@@ -41,6 +41,5 @@
 			"last 1 safari version"
 		]
 	},
-	"packageManager": "yarn@3.5.0",
-	"version": null
+	"packageManager": "yarn@3.5.0"
 }
