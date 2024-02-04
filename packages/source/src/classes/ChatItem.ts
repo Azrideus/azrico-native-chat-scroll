@@ -36,8 +36,7 @@ export class ChatItem {
 	savePosition() {
 		this.__options['lasttop'] = this.topDistance;
 	}
-	async deleteFromList() {
-		console.log('deleteFromList');
+	async deleteFromList() { 
 		return await this.managerClass.deleteMessage(this);
 	}
 

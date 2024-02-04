@@ -1,3 +1,10 @@
+type ExampleSearchProps = {
+	skip: number;
+	limit: number;
+	_created_date: any;
+	exclude: any;
+	sort: any;
+};
 export class ExampleChatLoader {
 	private static itemsInDB: Array<{
 		_id: string;
@@ -6,7 +13,13 @@ export class ExampleChatLoader {
 		date: Date;
 	}> = [];
 
-	static async loadExampleChats(props: any): Promise<any[]> {
+	/**
+	 * loader function for test chat list
+	 * has delay of 500-1500ms
+	 * @param props
+	 * @returns
+	 */
+	static async loadExampleChats(props: Partial<ExampleSearchProps>): Promise<any[]> {
 		let { skip, limit, _created_date, exclude, sort } = props;
 		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
@@ -38,19 +51,36 @@ export class ExampleChatLoader {
 				}
 				//apply the skip and limit rules:
 				if (!skip) skip = 0;
-				const res = searchedItems.slice(skip, skip + limit);
-				console.log('loadItemsFromDB', props);
+				const res = searchedItems.slice(skip, skip + Number(limit ?? 0));
+	 
 				resolve(res);
 			}, Math.random() * 1000 + 500);
 		});
 	}
-	static addExampleChat(r: any) {
+	/**
+	 * add an example message to the test chat list
+	 * @param newmsg
+	 */
+	static addExampleChat(newmsg: any) {
 		ExampleChatLoader.itemsInDB.unshift({
-			...r,
-			_id: r['_id'] ?? 'oldmsg-' + ExampleChatLoader.itemsInDB.length,
-			user: r['user'] ?? r['User Name'],
-			text: r['text'] ?? r['Content'],
-			date: new Date(r['Date'] ?? r['_created_date']),
+			...newmsg,
+			_id: newmsg['_id'] ?? 'oldmsg-' + ExampleChatLoader.itemsInDB.length,
+			user: newmsg['user'] ?? newmsg['User Name'],
+			text: newmsg['text'] ?? newmsg['Content'],
+			date: new Date(newmsg['date'] ?? newmsg['Date'] ?? newmsg['_created_date']),
+		});
+		return true;
+	}
+	/**
+	 * add an example message to the test chat list
+	 * has delay of 200-400ms
+	 * @param newmsg
+	 */
+	static async addExampleChatAsync(newmsg: any) {
+		return await new Promise((resolve, reject) => {
+			setTimeout(() => {
+				resolve(ExampleChatLoader.addExampleChat(newmsg));
+			}, Math.random() * 200 + 200);
 		});
 	}
 	static getExampleChatLenght() {
