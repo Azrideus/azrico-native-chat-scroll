@@ -15,7 +15,7 @@ type VirtualScrollerProps = {
 	WrapperContent?: React.ElementType<any>;
 	BottomContent?: React.ElementType<any>;
 	TopContent?: React.ElementType<any>;
-	loadFunction: LoadFunctionType;
+	loadFunction?: LoadFunctionType;
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 	className?: string;
 	itemClassName?: string;
