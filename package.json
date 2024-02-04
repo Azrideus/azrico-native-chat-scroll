@@ -3,6 +3,7 @@
 	"main": "source/index.tsx",
 	"private": true,
 	"scripts": {
+		"dev": "yarn run start",
 		"start": "yarn workspace demo start",
 		"build": "yarn workspace @azrideus/react-chat-scroll build",
 		"publish_default": "yarn workspace @azrideus/react-chat-scroll publish_default",

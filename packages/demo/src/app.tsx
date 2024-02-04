@@ -1,57 +1,15 @@
 import React from 'react';
 import VirtualChatList from '@azrideus/react-chat-scroll';
-import examplechats from './examplechats.json';
 import ChatManager from '../../source/src/classes/ChatManager';
- 
+import {
+	loadExampleChats,
+	addExampleChat,
+	getExampleChatLenght,
+} from '../../source/src/example/example_loader';
 
-const itemsInDB = examplechats.map((r, i) => {
-	return {
-		_id: 'oldmsg-' + i,
-		user: r['User Name'],
-		text: r['Content'],
-		date: new Date(r['Date']),
-		...r,
-	};
-});
-async function loadItemsFromDB(props: any): Promise<any[]> {
-	let { skip, limit, _created_date, exclude, sort } = props;
-	return await new Promise((resolve, reject) => {
-		setTimeout(() => {
-			let searchedItems: any[] = [...itemsInDB];
-
-			if (_created_date) {
-				if (_created_date.$gte instanceof Date) {
-					const dtTime = _created_date.$gte.getTime();
-					searchedItems = searchedItems.filter(
-						(s) => (s.date as Date).getTime() >= dtTime
-					);
-				}
-				if (_created_date.$lte instanceof Date) {
-					const dtTime = _created_date.$lte.getTime();
-					searchedItems = searchedItems.filter(
-						(s) => (s.date as Date).getTime() <= dtTime
-					);
-				}
-			}
-
-			if (Array.isArray(exclude)) {
-				searchedItems = searchedItems.filter((s) => !exclude.includes(s._id));
-			}
-			if (sort._created_date) {
-				const sortdir = sort._created_date;
-				searchedItems.sort(
-					(a, b) => (a.date.getTime() - b.date.getTime()) * sortdir
-				) as any[];
-			}
-			//apply the skip and limit rules:
-			if (!skip) skip = 0;
-			const res = searchedItems.slice(skip, skip + limit);
-
-			console.log('loadItemsFromDB', props);
-			resolve(res);
-		}, Math.random() * 1000 + 500);
-	});
-}
+/* ------------------------------ initial chats ----------------------------- */
+import examplechats from './examplechats.json';
+examplechats.forEach(addExampleChat);
 
 export function Examplechatscroll() {
 	const [message, set_message] = React.useState('');
@@ -59,16 +17,16 @@ export function Examplechatscroll() {
 	const timerRef = React.useRef<any>();
 
 	async function addNewMsg(obj: any) {
-		itemsInDB.unshift(obj);
+		addExampleChat(obj);
 		await managerRef.current?.sendNewMessage(obj);
 	}
 	async function addLoop(firsttime = false) {
-		if (itemsInDB.length > 1000) return;
+		if (getExampleChatLenght() > 1000) return;
 		if (!firsttime) {
 			const newMsg = {
-				_id: 'spam-' + itemsInDB.length,
+				_id: 'spam-' + getExampleChatLenght(),
 				user: 'spammer',
-				text: 'spam: ' + itemsInDB.length,
+				text: 'spam: ' + getExampleChatLenght(),
 				date: new Date(),
 			};
 			await addNewMsg(newMsg);
@@ -84,7 +42,7 @@ export function Examplechatscroll() {
 		e.preventDefault();
 		if (message) {
 			const newMsg = {
-				_id: 'new-' + itemsInDB.length,
+				_id: 'new-' + getExampleChatLenght(),
 				user: 'me',
 				text: message,
 				date: new Date(),
@@ -135,7 +93,7 @@ export function Examplechatscroll() {
 						BottomContent={BottomContent}
 						TopContent={TopContent}
 						WrapperContent={LoadingArea}
-						loadFunction={loadItemsFromDB}
+						loadFunction={loadExampleChats}
 						// batchSize={30}
 					/>
 				</div>
