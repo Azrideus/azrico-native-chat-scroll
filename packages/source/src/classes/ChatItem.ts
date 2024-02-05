@@ -30,6 +30,7 @@ export class ChatItem {
 
 		//assign the date
 		this._created_date = ChatItem.getObjectDate(this.data);
+		console.log("dt:", this._created_date);
 		this._created_time = this._created_date.getTime();
 	}
 
@@ -53,9 +54,8 @@ export class ChatItem {
 		let controlObject = inp;
 		if (controlObject)
 			try {
-				return new Date(controlObject.date || controlObject._created_date);
-			} catch {}
-
+				return new Date(controlObject._created_date ?? controlObject.date);
+			} catch {} 
 		return new Date();
 	}
 }

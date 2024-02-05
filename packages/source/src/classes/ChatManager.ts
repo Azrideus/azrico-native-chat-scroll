@@ -67,7 +67,7 @@ export class ChatManager {
 
 	constructor() {}
 
-	set_loadFunction(fnc: LoadFunctionType) {
+	set_loadFunction(fnc: LoadFunctionType | undefined) {
 		this.loadFunction = fnc;
 	}
 	set_refreshFunction(fnc: RefreshFunctionType) {
@@ -179,16 +179,18 @@ export class ChatManager {
 		/* ------------------------ convert items to ChatItem ----------------------- */
 		let final_chats = loaded_items
 			.map((r, i) => new ChatItem(this, r))
-			/* -------- first sort in inverse so we can assign Indexes correctly -------- */
-			.sort((a, b) => b._created_time - a._created_time);
-
-		/* ------------------------------ apply indexes ----------------------------- */
-
-		/* -------------------- then reverse and add to the list -------------------- */
-		final_chats = final_chats.reverse();
+			/* ----------------------------- sort the items ----------------------------- */
+			.sort(ChatManager.item_sort);
 		await this.add_items_to_list(final_chats, direction, true);
 	}
 
+	/**
+	 * add the given items to given direction of current items
+	 * @param items_to_add
+	 * @param direction
+	 * @param isFromDB
+	 * @returns
+	 */
 	private async add_items_to_list(
 		items_to_add: ChatItem[],
 		direction: LoadDirection = LoadDirection.UP,
@@ -404,6 +406,24 @@ export class ChatManager {
 
 	get lastOperation(): ChangeOperation {
 		return this.#lastOperation;
+	}
+
+	/* -------------------------------------------------------------------------- */
+
+	/**
+	 * returns which item should come first, A or B
+	 * if A > B returns positive
+	 * if B > A returns negative
+	 * @param a
+	 * @param b
+	 * @returns
+	 */
+	public static item_sort(a: ChatItem, b: ChatItem, sortdir = 1) {
+		let dtCmp = a._created_time - b._created_time;
+		if (dtCmp === 0 && a.itemid && b.itemid) dtCmp = a.itemid.localeCompare(b.itemid);
+		if (dtCmp === 0 && a.data.text && b.data.text)
+			dtCmp = a.data.text.localeCompare(b.data.text);
+		return dtCmp * sortdir;
 	}
 }
 export default ChatManager;

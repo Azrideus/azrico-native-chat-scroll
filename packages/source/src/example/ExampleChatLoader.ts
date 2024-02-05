@@ -1,3 +1,6 @@
+import { ChatManager } from './../classes/ChatManager';
+import { ChatItem } from '../classes/ChatItem';
+
 type ExampleSearchProps = {
 	skip: number;
 	limit: number;
@@ -29,13 +32,13 @@ export class ExampleChatLoader {
 					if (_created_date.$gte instanceof Date) {
 						const dtTime = _created_date.$gte.getTime();
 						searchedItems = searchedItems.filter(
-							(s) => (s.date as Date).getTime() >= dtTime
+							(s) => ChatItem.getObjectDate(s).getTime() >= dtTime
 						);
 					}
 					if (_created_date.$lte instanceof Date) {
 						const dtTime = _created_date.$lte.getTime();
 						searchedItems = searchedItems.filter(
-							(s) => (s.date as Date).getTime() <= dtTime
+							(s) => ChatItem.getObjectDate(s).getTime() <= dtTime
 						);
 					}
 				}
@@ -45,14 +48,12 @@ export class ExampleChatLoader {
 				}
 				if (sort._created_date) {
 					const sortdir = sort._created_date;
-					searchedItems.sort(
-						(a, b) => (a.date.getTime() - b.date.getTime()) * sortdir
-					) as any[];
+					searchedItems.sort((a, b) => ChatManager.item_sort(a, b, sortdir)) as any[];
 				}
 				//apply the skip and limit rules:
 				if (!skip) skip = 0;
 				const res = searchedItems.slice(skip, skip + Number(limit ?? 0));
-	 
+
 				resolve(res);
 			}, Math.random() * 1000 + 500);
 		});
@@ -67,7 +68,7 @@ export class ExampleChatLoader {
 			_id: newmsg['_id'] ?? 'oldmsg-' + ExampleChatLoader.itemsInDB.length,
 			user: newmsg['user'] ?? newmsg['User Name'],
 			text: newmsg['text'] ?? newmsg['Content'],
-			date: new Date(newmsg['date'] ?? newmsg['Date'] ?? newmsg['_created_date']),
+			_created_date: newmsg['date'] ?? newmsg['Date'] ?? newmsg['_created_date'],
 		});
 		return true;
 	}

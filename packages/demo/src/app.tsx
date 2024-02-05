@@ -168,7 +168,7 @@ function ItemRender(props: any) {
 				</div>
 
 				<p style={{ whiteSpace: 'pre-line' }}>{item.text}</p>
-				<p>{formatDate(item.date)}</p>
+				<p>{formatDate(item._created_date)}</p>
 			</div>
 		</div>
 	);
