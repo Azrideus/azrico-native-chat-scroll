@@ -1,15 +1,16 @@
-import { ChatManager } from './../classes/ChatManager';
+import { ChatManager } from '../classes/ChatManager';
 import { ChatItem } from '../classes/ChatItem';
 import { UIDHelper } from '../classes/UIDHelper';
 
-type ExampleSearchProps = {
+type TestSearchProps = { [key: string]: any } & Partial<{
 	skip: number;
 	limit: number;
+	_creator: any;
 	_created_date: any;
 	exclude: any;
 	sort: any;
-};
-export class ExampleChatLoader {
+}>;
+export class TestChatLoader {
 	private static itemsInDB: Array<{
 		_id: string;
 		user: string;
@@ -23,12 +24,21 @@ export class ExampleChatLoader {
 	 * @param props
 	 * @returns
 	 */
-	static async loadFunction(props: Partial<ExampleSearchProps>): Promise<any[]> {
-		let { skip, limit, _created_date, exclude, sort } = props;
+	static async loadFunction(
+		props: TestSearchProps,
+		filter_fnc?: (input: ChatItem[], props: TestSearchProps) => ChatItem[]
+	): Promise<any[]> {
+		let { skip, limit, _created_date, _creator, exclude, sort } = props;
+
 		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
-				let searchedItems: any[] = [...ExampleChatLoader.itemsInDB];
-
+				let searchedItems: any[] = [...TestChatLoader.itemsInDB];
+				if (filter_fnc) {
+					searchedItems = filter_fnc(searchedItems, props);
+				}
+				if (_creator) {
+					searchedItems = searchedItems.filter((s) => s._creator == _creator);
+				}
 				if (_created_date) {
 					if (_created_date.$gte instanceof Date) {
 						const dtTime = _created_date.$gte.getTime();
@@ -61,7 +71,7 @@ export class ExampleChatLoader {
 	}
 
 	static clearExampleChats() {
-		ExampleChatLoader.itemsInDB = [];
+		TestChatLoader.itemsInDB = [];
 	}
 	/**
 	 * clear then set the example chats
@@ -70,7 +80,7 @@ export class ExampleChatLoader {
 	 */
 	static setExampleChats(examplechats: any[]) {
 		this.clearExampleChats();
-		examplechats.forEach(ExampleChatLoader.addExampleChat);
+		examplechats.forEach(TestChatLoader.addExampleChat);
 		return true;
 	}
 	/**
@@ -78,7 +88,7 @@ export class ExampleChatLoader {
 	 * @param newmsg
 	 */
 	static addExampleChat(newmsg: any) {
-		ExampleChatLoader.itemsInDB.unshift({
+		TestChatLoader.itemsInDB.unshift({
 			...newmsg,
 			_id: newmsg['_id'] ?? `oldmsg-${UIDHelper.nextid()}`,
 			text: newmsg['text'] ?? newmsg['Content'],
@@ -95,12 +105,12 @@ export class ExampleChatLoader {
 	static async addExampleChatAsync(newmsg: any) {
 		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
-				resolve(ExampleChatLoader.addExampleChat(newmsg));
+				resolve(TestChatLoader.addExampleChat(newmsg));
 			}, Math.random() * 200 + 200);
 		});
 	}
 	static getExampleChatLenght() {
-		return ExampleChatLoader.itemsInDB.length;
+		return TestChatLoader.itemsInDB.length;
 	}
 }
-export default ExampleChatLoader;
+export default TestChatLoader;
