@@ -9,6 +9,7 @@ type ExampleSearchProps = {
 	sort: any;
 };
 export class ExampleChatLoader {
+	private static currentid = 0;
 	private static itemsInDB: Array<{
 		_id: string;
 		user: string;
@@ -65,7 +66,7 @@ export class ExampleChatLoader {
 	static addExampleChat(newmsg: any) {
 		ExampleChatLoader.itemsInDB.unshift({
 			...newmsg,
-			_id: newmsg['_id'] ?? 'oldmsg-' + ExampleChatLoader.itemsInDB.length,
+			_id: newmsg['_id'] ?? 'oldmsg-' + ExampleChatLoader.currentid++,
 			user: newmsg['user'] ?? newmsg['User Name'],
 			text: newmsg['text'] ?? newmsg['Content'],
 			_created_date: newmsg['_created_date'] ?? newmsg['Date'] ?? newmsg['date'],

@@ -85,6 +85,7 @@ export function Examplechatscroll() {
 					}}
 				>
 					<VirtualChatList
+						debug
 						managerRef={managerRef as any}
 						ItemRender={ItemRender}
 						BottomContent={BottomContent}

@@ -22,10 +22,12 @@ type VirtualScrollerProps = {
 	itemClassName?: string;
 	innerClassName?: string;
 	itemProps?: ItemPropsType;
+	debug?: boolean;
 };
 
 /**
  * Advanced Virtual scrolling
+ * use the debug prop to enable logs
  * @param props
  */
 export function VirtualChatList(props: VirtualScrollerProps) {
@@ -41,23 +43,26 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	const [chatManager, set_chatManager] = React.useState(new ChatManager());
 
 	if (props.managerRef) props.managerRef.current = chatManager;
-	/* -------------------------------------------------------------------------- */
-	/*                         load new items when needed                         */
-	/* -------------------------------------------------------------------------- */
+
+	const setItems = React.useCallback(
+		async (items: any[]) => {
+			return await new Promise((resolve) => {
+				set_currentItems((s) => {
+					resolve(items);
+					return items;
+				});
+			});
+		},
+		[set_currentItems]
+	);
+
+	/* ------------------------------ initial setup ----------------------------- */
 	React.useLayoutEffect(() => {
 		chatManager.set_loadFunction(props.loadFunction);
 		chatManager.set_setItemsFunction(setItems);
 		chatManager.set_refreshFunction(forceUpdate);
-	}, []);
-
-	async function setItems(items: ChatItem[]) {
-		return await new Promise((resolve) => {
-			set_currentItems((s) => {
-				resolve(items);
-				return items;
-			});
-		});
-	}
+		chatManager.show_logs = Boolean(props.debug);
+	}, [props.loadFunction, props.debug, setItems]);
 
 	/* ------------------------------ initial load ------------------------------ */
 	React.useEffect(() => {
@@ -65,12 +70,24 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	}, []);
 	/* ------------------ load if reaching end or start of page ----------------- */
 	async function checkShouldLoad() {
-		if (loadingFlag.current) return;
+		if (loadingFlag.current) {
+			chatManager.log(`checkShouldLoad`, `loadingFlag is set. return`);
+			return;
+		}
+		chatManager.log(
+			`checkShouldLoad`,
+			`isCloseToTop: ${chatManager.isCloseToTop}`,
+			`isCloseToBottom: ${chatManager.isCloseToBottom}`,
+			`isAtVeryTop: ${chatManager.isAtVeryTop}`,
+			`isAtVeryBottom: ${chatManager.isAtVeryBottom}`,
+			`shouldLoadTop: ${chatManager.shouldLoadTop}`,
+			`shouldLoadDown: ${chatManager.shouldLoadDown}`
+		);
 		if (chatManager.shouldLoadTop || chatManager.shouldLoadDown) {
-			if (loadingFlag.current) return;
 			try {
 				loadingFlag.current = true;
 				await chatManager.loadIfNeeded();
+			} catch {
 			} finally {
 				loadingFlag.current = false;
 			}

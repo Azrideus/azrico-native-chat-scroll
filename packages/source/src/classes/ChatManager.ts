@@ -35,6 +35,7 @@ type SetItemsFunctionType = (items: ChatItem[]) => any;
 export class ChatManager {
 	static WRAPPER_HEIGHT = 400;
 	static WRAPPER_BUFFER_HEIGHT = ChatManager.WRAPPER_HEIGHT + 200;
+	public show_logs = false;
 
 	//we update scroll positions relative to this item to prevent the scroll from jumping
 	private referenceItem: ChatItem | undefined;
@@ -102,7 +103,11 @@ export class ChatManager {
 			.flat()
 			.filter((s) => s)
 			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
-
+		this.log(
+			'sendNewMessage',
+			`• msglist: ${msglist.length}`,
+			`• messagesToAdd: ${messagesToAdd.length}`
+		);
 		//make sure the messages are not already loaded :
 		const newMessagesToAdd = messagesToAdd.filter(
 			(s) => this.currentItemsMap[s.itemid] == null
@@ -132,6 +137,8 @@ export class ChatManager {
 	 */
 	async loadIfNeeded() {
 		let loadDir = LoadDirection.NONE;
+ 
+
 		if (this.shouldLoadTop) loadDir = LoadDirection.UP;
 		else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
 		else return;
@@ -172,7 +179,13 @@ export class ChatManager {
 		//
 
 		const loaded_items = await this.loadFunction(search_query);
-
+		this.log(
+			'load_items',
+			`• search_query: `,
+			search_query,
+			`• loaded_items: ${loaded_items.length}`,
+			`• direction: ${direction}`
+		);
 		//
 		this.#lastDBLoad = loaded_items.length;
 
@@ -209,10 +222,16 @@ export class ChatManager {
 			//add below the list
 			nextItems.push(...items_to_add);
 		}
+
 		await this.setItems(nextItems);
 		return items_to_add.length;
 	}
 
+	/**
+	 * set all current items
+	 * @param items 
+	 * @returns 
+	 */
 	private async setItems(items: ChatItem[]): Promise<number> {
 		this.before_update();
 		this.currentItems = this.cleanExtraItems(items);
@@ -227,6 +246,12 @@ export class ChatManager {
 		this.check_position();
 		this.update_next_prev_items();
 
+		this.log(
+			'setItems',
+			`• search_query: `,
+			`• currentItems: ${this.currentItems.length}`,
+			`• lastCountChange: ${this.#lastCountChange}`
+		);
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
 		return this.currentItems.length;
 	}
@@ -339,6 +364,13 @@ export class ChatManager {
 	private updateBottomMessage() {
 		this.id_veryBottomMessage = this.bottomMessage?.itemid;
 	}
+
+	/* -------------------------------------------------------------------------- */
+
+	log(...msg: any[]) {
+		if (this.show_logs) console.log('[react-chatscroll]', ...msg);
+	}
+	
 	/* --------------------------------- getters -------------------------------- */
 	get topMessageDate(): number | undefined {
 		return this.topMessage?._created_time ?? undefined;
