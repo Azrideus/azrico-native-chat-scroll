@@ -67,8 +67,8 @@ export class ExampleChatLoader {
 		ExampleChatLoader.itemsInDB.unshift({
 			...newmsg,
 			_id: newmsg['_id'] ?? 'oldmsg-' + ExampleChatLoader.currentid++,
-			user: newmsg['user'] ?? newmsg['User Name'],
 			text: newmsg['text'] ?? newmsg['Content'],
+			_creator: newmsg['_creator'] ?? newmsg['user'],
 			_created_date: newmsg['_created_date'] ?? newmsg['Date'] ?? newmsg['date'],
 		});
 		return true;

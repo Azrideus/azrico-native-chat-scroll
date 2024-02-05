@@ -128,8 +128,8 @@ function ItemRender(props: any) {
 	if (!item) return <div>item</div>;
  
 
-	const isByMe = item.user === 'me';
-	const needProfile = previtem?.user != item.user;
+	const isByMe = item._creator === 'me';
+	const needProfile = previtem?._creator != item._creator;
 	return (
 		<div
 			style={{
@@ -162,7 +162,7 @@ function ItemRender(props: any) {
 					{needProfile && (
 						<>
 							<img src={item['Avatar URL']} style={{ height: 32, width: 32 }}></img>
-							<b>{item.user}</b>
+							<b>{item._creator}</b>
 						</>
 					)}
 					<button onClick={() => props.chatitem.Delete()}>delete</button>

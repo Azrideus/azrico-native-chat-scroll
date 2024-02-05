@@ -7,6 +7,8 @@ export class ChatItem {
 	readonly key: string;
 	readonly itemid: string;
 	readonly data: ItemData;
+
+	readonly _creator: string;
 	readonly _created_date: Date;
 	readonly _created_time: number;
 	readonly managerClass: ChatManager;
@@ -22,21 +24,24 @@ export class ChatItem {
 	constructor(mng: ChatManager, d: ItemData) {
 		//set the data
 		this.managerClass = mng;
-		this.data = d;
+		this.data = d ?? {};
 
 		//get the id from data
 		this.itemid = ChatItem.getObjectId(this.data) || UIDHelper.nextid();
 		this.key = String(this.itemid);
 
 		//assign the date
-		this._created_date = ChatItem.getObjectDate(this.data); 
+		this._created_date = ChatItem.getObjectDate(this.data);
 		this._created_time = this._created_date.getTime();
+
+		//assign creator
+		this._creator = this.data._creator;
 	}
 
 	savePosition() {
 		this.__options['lasttop'] = this.topDistance;
 	}
-	async Delete() { 
+	async Delete() {
 		return await this.managerClass.deleteMessage(this);
 	}
 
@@ -49,12 +54,12 @@ export class ChatItem {
 	static getObjectId(inp: any) {
 		return inp._id ?? inp.id;
 	}
-	static getObjectDate(inp: any):Date {
+	static getObjectDate(inp: any): Date {
 		let controlObject = inp;
 		if (controlObject)
 			try {
 				return new Date(controlObject._created_date ?? controlObject.date);
-			} catch {} 
+			} catch {}
 		return new Date();
 	}
 }
