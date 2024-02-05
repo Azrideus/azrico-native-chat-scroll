@@ -1,5 +1,6 @@
 import { ChatManager } from './../classes/ChatManager';
 import { ChatItem } from '../classes/ChatItem';
+import { UIDHelper } from '../classes/UIDHelper';
 
 type ExampleSearchProps = {
 	skip: number;
@@ -9,7 +10,6 @@ type ExampleSearchProps = {
 	sort: any;
 };
 export class ExampleChatLoader {
-	private static currentid = 0;
 	private static itemsInDB: Array<{
 		_id: string;
 		user: string;
@@ -23,7 +23,7 @@ export class ExampleChatLoader {
 	 * @param props
 	 * @returns
 	 */
-	static async loadExampleChats(props: Partial<ExampleSearchProps>): Promise<any[]> {
+	static async loadFunction(props: Partial<ExampleSearchProps>): Promise<any[]> {
 		let { skip, limit, _created_date, exclude, sort } = props;
 		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
@@ -59,6 +59,20 @@ export class ExampleChatLoader {
 			}, Math.random() * 1000 + 500);
 		});
 	}
+
+	static clearExampleChats() {
+		ExampleChatLoader.itemsInDB = [];
+	}
+	/**
+	 * clear then set the example chats
+	 * @param examplechats
+	 * @returns
+	 */
+	static setExampleChats(examplechats: any[]) {
+		this.clearExampleChats();
+		examplechats.forEach(ExampleChatLoader.addExampleChat);
+		return true;
+	}
 	/**
 	 * add an example message to the test chat list
 	 * @param newmsg
@@ -66,7 +80,7 @@ export class ExampleChatLoader {
 	static addExampleChat(newmsg: any) {
 		ExampleChatLoader.itemsInDB.unshift({
 			...newmsg,
-			_id: newmsg['_id'] ?? 'oldmsg-' + ExampleChatLoader.currentid++,
+			_id: newmsg['_id'] ?? `oldmsg-${UIDHelper.nextid()}`,
 			text: newmsg['text'] ?? newmsg['Content'],
 			_creator: newmsg['_creator'] ?? newmsg['user'],
 			_created_date: newmsg['_created_date'] ?? newmsg['Date'] ?? newmsg['date'],

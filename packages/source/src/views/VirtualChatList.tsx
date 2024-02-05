@@ -71,18 +71,9 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	/* ------------------ load if reaching end or start of page ----------------- */
 	async function checkShouldLoad() {
 		if (loadingFlag.current) {
-			chatManager.log(`checkShouldLoad`, `loadingFlag is set. return`);
 			return;
 		}
-		chatManager.log(
-			`checkShouldLoad`,
-			`isCloseToTop: ${chatManager.isCloseToTop}`,
-			`isCloseToBottom: ${chatManager.isCloseToBottom}`,
-			`isAtVeryTop: ${chatManager.isAtVeryTop}`,
-			`isAtVeryBottom: ${chatManager.isAtVeryBottom}`,
-			`shouldLoadTop: ${chatManager.shouldLoadTop}`,
-			`shouldLoadDown: ${chatManager.shouldLoadDown}`
-		);
+		 
 		if (chatManager.shouldLoadTop || chatManager.shouldLoadDown) {
 			try {
 				loadingFlag.current = true;
