@@ -7,6 +7,7 @@ import ChatManager, {
 	LoadDirection,
 	ChangeOperation,
 } from '../classes/ChatManager';
+import { useChatScroll } from '../hooks/use-scroller';
 
 type ItemPropsType = any;
 type VirtualScrollerProps = {
@@ -31,9 +32,8 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	//
 	const innerRef = React.useRef<HTMLDivElement>(null);
 	const outerRef = React.useRef<HTMLDivElement>(null);
-	const bottomElementRef = React.useRef<HTMLDivElement>(null);
+	const bottomRef = React.useRef<HTMLDivElement>(null);
 
-	const firtLoad = React.useRef<boolean>(true);
 	const loadingFlag = React.useRef<boolean>(false);
 
 	const [updateKey, forceUpdate] = React.useReducer((x) => (x + 1) % 100, 0);
@@ -77,64 +77,14 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 		}
 	}
 
-	/* -------------------------------------------------------------------------- */
-	/*                               Check load page                              */
-	/* -------------------------------------------------------------------------- */
-
-	function _onScroll(e: any) {
-		updateDistances();
-		checkShouldLoad();
-	}
-	function updateDistances() {
-		chatManager.distanceToBottom = currentDistanceToBottom(
-			innerRef.current as any,
-			outerRef.current as any
-		);
-		chatManager.distanceToTop = (outerRef.current as any).scrollTop;
-		chatManager.isSticky = chatManager.distanceToBottom < 50;
-	}
-
-	/* -------------------------------------------------------------------------- */
-	/*            prevent the scroller from jumping when you add items            */
-	/* -------------------------------------------------------------------------- */
-	React.useLayoutEffect(() => {
-		if (!outerRef.current || !innerRef.current) return;
-		const itemDelta = chatManager.lastCountChange;
-		const lastOp = chatManager.lastOperation;
-		if (lastOp === ChangeOperation.NONE) return;
-
-		if (chatManager.lastDBLoad > 0 && firtLoad.current) {
-			firtLoad.current = false;
-			return stickToBottom();
-		}
-		if (Number.isNaN(chatManager.referenceLastTop)) {
-			//fist load, stick to bottom
-			return stickToBottom();
-		}
-		if (chatManager.isSticky && Math.abs(itemDelta) < 5) {
-			//sticky to bottom
-			return stickToBottom();
-		}
-
-		{
-			//keep the same distance to the reference message
-			const jumpDistance = chatManager.referenceTop - chatManager.referenceLastTop;
-			const newScrollPosition = (outerRef.current as any).scrollTop + jumpDistance;
-			(outerRef.current as any).scrollTop = newScrollPosition;
-			// console.log('jumpDistance:', jumpDistance);
-		}
-	}, [currentItems]);
-
-	function stickToBottom() {
-		(outerRef.current as any).scrollTop = outerRef.current?.scrollHeight;
-	}
-	// React.useEffect(() => {
-	// 	console.log(currentItems);
-	// }, [currentItems]);
-	/* -------------------------------------------------------------------------- */
-	/*                             render the scroller                            */
-	/* -------------------------------------------------------------------------- */
-
+	useChatScroll({
+		outerRef: outerRef,
+		innerRef: innerRef,
+		bottomRef: bottomRef,
+		currentItems: currentItems,
+		checkShouldLoad: checkShouldLoad,
+		chatManager: chatManager,
+	});
 	return (
 		<div
 			ref={outerRef}
@@ -144,13 +94,12 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 					'--WRAPPER_HEIGHT': ChatManager.WRAPPER_HEIGHT,
 				} as any
 			}
-			onScroll={_onScroll}
 		>
 			<div ref={innerRef} className={'azchat-inner-container ' + props.innerClassName}>
-				{chatManager.isAtTop && props.TopContent && <props.TopContent />}
-				{!chatManager.isAtTop && (
+				{chatManager.isAtVeryTop && props.TopContent && <props.TopContent />}
+				{!chatManager.isAtVeryTop && (
 					<div className={'azchat-wrapper wrapper-top'}>
-						{!chatManager.isAtTop && props.WrapperContent && <props.WrapperContent />}
+						{!chatManager.isAtVeryTop && props.WrapperContent && <props.WrapperContent />}
 					</div>
 				)}
 
@@ -169,14 +118,14 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 						);
 					})}
 				</ol>
-				{!chatManager.isAtBottom && (
+				{!chatManager.isAtVeryBottom && (
 					<div className={'azchat-wrapper wrapper-bottom'}>
 						{props.WrapperContent && <props.WrapperContent />}
 					</div>
 				)}
 
-				<div ref={bottomElementRef}>
-					{chatManager.isAtBottom && props.BottomContent && <props.BottomContent />}
+				<div ref={bottomRef}>
+					{chatManager.isAtVeryBottom && props.BottomContent && <props.BottomContent />}
 				</div>
 			</div>
 		</div>

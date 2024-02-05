@@ -109,7 +109,7 @@ export class ChatManager {
 		);
 
 		if (newMessagesToAdd.length === 0) return false;
-		if (this.isAtBottom) {
+		if (this.isAtVeryBottom) {
 			//we are at the bottom of the list, new messages should be added
 
 			// console.log('add Message:', messagesToAdd);
@@ -366,10 +366,14 @@ export class ChatManager {
 	get referenceLastTop(): number {
 		return this.referenceItem?.lastTop || Number.NaN;
 	}
-	get isAtTop() {
+
+	/* we are at the very top. we cant go up anymore */
+	get isAtVeryTop() {
 		return this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
 	}
-	get isAtBottom() {
+
+	/* we are at the very bottom. we cant go down anymore */
+	get isAtVeryBottom() {
 		return (
 			this.bottomMessage == null ||
 			this.bottomMessage.itemid === this.id_veryBottomMessage
@@ -384,10 +388,10 @@ export class ChatManager {
 	}
 
 	get shouldLoadTop() {
-		return this.isCloseToTop && !this.isAtTop;
+		return this.isCloseToTop && !this.isAtVeryTop;
 	}
 	get shouldLoadDown() {
-		return this.isCloseToBottom && !this.isAtBottom;
+		return this.isCloseToBottom && !this.isAtVeryBottom;
 	}
 
 	/* number of changed items in the last load */

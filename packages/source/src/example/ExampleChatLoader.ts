@@ -68,7 +68,7 @@ export class ExampleChatLoader {
 			_id: newmsg['_id'] ?? 'oldmsg-' + ExampleChatLoader.itemsInDB.length,
 			user: newmsg['user'] ?? newmsg['User Name'],
 			text: newmsg['text'] ?? newmsg['Content'],
-			_created_date: newmsg['date'] ?? newmsg['Date'] ?? newmsg['_created_date'],
+			_created_date: newmsg['_created_date'] ?? newmsg['Date'] ?? newmsg['date'],
 		});
 		return true;
 	}

@@ -29,15 +29,14 @@ export class ChatItem {
 		this.key = String(this.itemid);
 
 		//assign the date
-		this._created_date = ChatItem.getObjectDate(this.data);
-		console.log("dt:", this._created_date);
+		this._created_date = ChatItem.getObjectDate(this.data); 
 		this._created_time = this._created_date.getTime();
 	}
 
 	savePosition() {
 		this.__options['lasttop'] = this.topDistance;
 	}
-	async deleteFromList() { 
+	async Delete() { 
 		return await this.managerClass.deleteMessage(this);
 	}
 
@@ -50,7 +49,7 @@ export class ChatItem {
 	static getObjectId(inp: any) {
 		return inp._id ?? inp.id;
 	}
-	static getObjectDate(inp: any) {
+	static getObjectDate(inp: any):Date {
 		let controlObject = inp;
 		if (controlObject)
 			try {

@@ -164,7 +164,7 @@ function ItemRender(props: any) {
 							<b>{item.user}</b>
 						</>
 					)}
-					<button onClick={() => props.chatitem.deleteFromList()}>delete</button>
+					<button onClick={() => props.chatitem.Delete()}>delete</button>
 				</div>
 
 				<p style={{ whiteSpace: 'pre-line' }}>{item.text}</p>
