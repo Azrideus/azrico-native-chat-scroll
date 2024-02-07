@@ -401,6 +401,12 @@ export class ChatManager {
 
 	/* we are at the very top. we cant go up anymore */
 	get isAtVeryTop() {
+		if (
+			this.bottomMessage == null &&
+			this.topMessage == null &&
+			this.lastOperation != ChangeOperation.NONE
+		)
+			return true;
 		return this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
 	}
 
