@@ -1,12 +1,12 @@
 import React from 'react';
 import VirtualChatList, {
 	ChatManager,
-	ExampleChatLoader,
+	TestChatLoader,
 } from '@azrideus/react-chat-scroll';
 
 /* ------------------------------ initial chats ----------------------------- */
 import examplechats from './examplechats.json';
-examplechats.forEach(ExampleChatLoader.addExampleChat);
+examplechats.forEach(TestChatLoader.addExampleChat);
 
 export function Examplechatscroll() {
 	const [message, set_message] = React.useState('');
@@ -14,16 +14,16 @@ export function Examplechatscroll() {
 	const timerRef = React.useRef<any>();
 
 	async function addNewMsg(obj: any) {
-		ExampleChatLoader.addExampleChat(obj);
+		TestChatLoader.addExampleChat(obj);
 		await managerRef.current?.sendNewMessage(obj);
 	}
 	async function addLoop(firsttime = false) {
-		if (ExampleChatLoader.getExampleChatLenght() > 1000) return;
+		if (TestChatLoader.getExampleChatLenght() > 1000) return;
 		if (!firsttime) {
 			const newMsg = {
-				_id: 'spam-' + ExampleChatLoader.getExampleChatLenght(),
+				_id: 'spam-' + TestChatLoader.getExampleChatLenght(),
 				user: 'spammer',
-				text: 'spam: ' + ExampleChatLoader.getExampleChatLenght(),
+				text: 'spam: ' + TestChatLoader.getExampleChatLenght(),
 				date: new Date(),
 			};
 			await addNewMsg(newMsg);
@@ -39,7 +39,7 @@ export function Examplechatscroll() {
 		e.preventDefault();
 		if (message) {
 			const newMsg = {
-				_id: 'new-' + ExampleChatLoader.getExampleChatLenght(),
+				_id: 'new-' + TestChatLoader.getExampleChatLenght(),
 				user: 'me',
 				text: message,
 				date: new Date(),
@@ -91,7 +91,7 @@ export function Examplechatscroll() {
 						BottomContent={BottomContent}
 						TopContent={TopContent}
 						WrapperContent={LoadingArea}
-						loadFunction={ExampleChatLoader.loadExampleChats}
+						loadFunction={TestChatLoader.loadFunction}
 						// batchSize={30}
 					/>
 				</div>
