@@ -132,7 +132,7 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 					</div>
 				)}
 
-				<div ref={bottomRef}>
+				<div ref={bottomRef} className="azchat-bottom-item">
 					{chatManager.isAtVeryBottom && props.BottomContent && <props.BottomContent />}
 				</div>
 			</div>
