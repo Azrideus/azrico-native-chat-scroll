@@ -94,46 +94,50 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 		chatManager: chatManager,
 	});
 	return (
-		<div
-			ref={outerRef}
-			className={'azchat-filler azchat-virtualContainer ' + props.className}
-			style={
-				{
-					'--WRAPPER_HEIGHT': ChatManager.WRAPPER_HEIGHT,
-				} as any
-			}
-		>
-			<div ref={innerRef} className={'azchat-inner-container ' + props.innerClassName}>
-				{chatManager.isAtVeryTop && props.TopContent && <props.TopContent />}
-				{!chatManager.isAtVeryTop && (
-					<div className={'azchat-wrapper wrapper-top'}>
-						{!chatManager.isAtVeryTop && props.WrapperContent && <props.WrapperContent />}
-					</div>
-				)}
+		<div className={'azchat-filler azchat-main-container ' + props.className}>
+			<div
+				ref={outerRef}
+				className={'azchat-filler azchat-virtualContainer'}
+				style={
+					{
+						'--WRAPPER_HEIGHT': ChatManager.WRAPPER_HEIGHT,
+					} as any
+				}
+			>
+				<div ref={innerRef} className={'azchat-inner-container ' + props.innerClassName}>
+					{chatManager.isAtVeryTop && props.TopContent && <props.TopContent />}
+					{!chatManager.isAtVeryTop && (
+						<div className={'azchat-wrapper wrapper-top'}>
+							{!chatManager.isAtVeryTop && props.WrapperContent && (
+								<props.WrapperContent />
+							)}
+						</div>
+					)}
 
-				<ol>
-					{currentItems.map((r, index) => {
-						return (
-							<RowRender
-								className={props.itemClassName}
-								ItemRender={props.ItemRender}
-								key={r.key}
-								itemProps={props.itemProps}
-								item={r}
-								nextitem={r.nextitem}
-								previtem={r.previtem}
-							/>
-						);
-					})}
-				</ol>
-				{!chatManager.isAtVeryBottom && (
-					<div className={'azchat-wrapper wrapper-bottom'}>
-						{props.WrapperContent && <props.WrapperContent />}
-					</div>
-				)}
+					<ol>
+						{currentItems.map((r, index) => {
+							return (
+								<RowRender
+									className={props.itemClassName}
+									ItemRender={props.ItemRender}
+									key={r.key}
+									itemProps={props.itemProps}
+									item={r}
+									nextitem={r.nextitem}
+									previtem={r.previtem}
+								/>
+							);
+						})}
+					</ol>
+					{!chatManager.isAtVeryBottom && (
+						<div className={'azchat-wrapper wrapper-bottom'}>
+							{props.WrapperContent && <props.WrapperContent />}
+						</div>
+					)}
 
-				<div ref={bottomRef} className="azchat-bottom-item">
-					{chatManager.isAtVeryBottom && props.BottomContent && <props.BottomContent />}
+					<div ref={bottomRef} className="azchat-bottom-item">
+						{chatManager.isAtVeryBottom && props.BottomContent && <props.BottomContent />}
+					</div>
 				</div>
 			</div>
 		</div>

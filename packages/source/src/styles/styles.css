@@ -14,6 +14,11 @@
 	width: 100%;
 	height: 100%;
 }
+.azchat-main-container {
+	width: 100%;
+	height: 100%;
+overflow: clip;
+}
 .azchat-inner-container {
 	width: 100%;
 	min-height: 100%;
