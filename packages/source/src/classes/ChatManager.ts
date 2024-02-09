@@ -1,5 +1,4 @@
 import { ChatItem, ItemData } from './ChatItem';
- 
 
 //max number of items we keep in cache
 const MAX_LOAD = 65;
@@ -80,27 +79,43 @@ export class ChatManager {
 	}
 
 	/**
-	 * get message `index` using its `_id` and the `itemsIndexMap` table.
+	 * get message `index` using its `_id` or `data` and the `itemsIndexMap` table.
 	 * returns -1 if not found
 	 * @param search
 	 */
 	getMessageIndex(search: MessageSearchParams): number {
-		let msgid = '';
 		if (!search) return -1;
+
+		/* ------------------ search for indexed items by their id ------------------ */
+		let msgid = '';
 		////if (typeof search === 'object')
 		////	msgid = search instanceof ChatItem ? search._id : search._id;
 		if (typeof search === 'object') msgid = search._id;
 		else msgid = String(search);
-		const itemIndex = this.itemsIndexMap[msgid];
-		if (!itemIndex || itemIndex < 0) return -1;
-		return itemIndex;
+		if (this.itemsIndexMap[msgid]) return this.itemsIndexMap[msgid];
+
+		/* ----------------------- search by data of the item ----------------------- */
+		if (typeof search === 'object') {
+			const found_ChatItem = this.currentItems.find((s) => s.data === search);
+			msgid = found_ChatItem?._id ?? '';
+			if (this.itemsIndexMap[msgid]) return this.itemsIndexMap[msgid];
+		}
+
+		return -1;
 	}
 	/**
-	 * get a message by using its `_id`
+	 * get a message by using the `getMessageIndex` function
 	 * @param search
 	 */
 	getMessage(search: MessageSearchParams): ChatItem | undefined {
-		if (search instanceof ChatItem && this.currentItems.includes(search)) return search;
+		if (!search) return undefined;
+		if (
+			typeof search === 'object' &&
+			search instanceof ChatItem &&
+			this.currentItems.includes(search)
+		)
+			return search;
+		/* ------------ find the index and return the item at that index ------------ */
 		const itemIndex = this.getMessageIndex(search);
 		if (itemIndex < 0) return undefined;
 		return this.currentItems[itemIndex];
