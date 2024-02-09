@@ -146,19 +146,26 @@ export class ChatManager {
 	}
 	/**
 	/**
-	 * change id of a message.
+	 * change id of a message. if `newid` already exists, will delete the message with that id
 	 * will run the `chatManager.buildIndexMap` and `chatItem.runRefreshFunction` functions
 	 * @param message
 	 * @param newid
 	 * @returns true if success, false otherwise
 	 */
 	async updateMessageId(message: MessageSearchParams, newid: string) {
-		const existingMessage = this.getMessage(message);
-		if (!existingMessage) return false;
-		this.log('updateMessageId', `${existingMessage._id}`, `-> ${newid}`);
-		(existingMessage as any)._id = newid;
+		const updateMessage = this.getMessage(message);
+		if (!updateMessage) return false;
+
+		const existingMessage = this.getMessage(newid);
+		if (existingMessage) {
+			this.log('updateMessageId', `removing existing message with id ${newid}`);
+			await this.deleteMessage(existingMessage);
+		}
+		/* ------------------------------ update the id ----------------------------- */
+		(updateMessage as any)._id = newid;
 		this.buildIndexMap();
-		await existingMessage.runRefreshFunction();
+		await this.refreshMessage(updateMessage);
+		this.log('updateMessageId', `${updateMessage._id}`, `-> ${newid}`);
 		return true;
 	}
 
