@@ -80,24 +80,27 @@ export class ChatManager {
 	}
 
 	/**
-	 * get message index by using its id
+	 * get message `index` using its `_id` and the `itemsIndexMap` table.
+	 * returns -1 if not found
 	 * @param search
 	 */
 	getMessageIndex(search: MessageSearchParams): number {
 		let msgid = '';
 		if (!search) return -1;
-		if (typeof search === 'object')
-			msgid = search instanceof ChatItem ? search.itemid : search._id;
+		////if (typeof search === 'object')
+		////	msgid = search instanceof ChatItem ? search._id : search._id;
+		if (typeof search === 'object') msgid = search._id;
 		else msgid = String(search);
 		const itemIndex = this.itemsIndexMap[msgid];
 		if (!itemIndex || itemIndex < 0) return -1;
 		return itemIndex;
 	}
 	/**
-	 * get a message by using its id
+	 * get a message by using its `_id`
 	 * @param search
 	 */
 	getMessage(search: MessageSearchParams): ChatItem | undefined {
+		if (search instanceof ChatItem && this.currentItems.includes(search)) return search;
 		const itemIndex = this.getMessageIndex(search);
 		if (itemIndex < 0) return undefined;
 		return this.currentItems[itemIndex];
@@ -114,6 +117,19 @@ export class ChatManager {
 		await this._setItems(newArr);
 		return true;
 	}
+
+	/**
+	 * call `runRefreshFunction` on the message
+	 * @param search
+	 * @returns
+	 */
+	async refreshMessage(search: MessageSearchParams): Promise<boolean> {
+		const msg = this.getMessage(search);
+		if (!msg) return false;
+		await msg?.runRefreshFunction();
+		return true;
+	}
+	/**
 	/**
 	 * change id of a message.
 	 * will run the `chatManager.buildIndexMap` and `chatItem.runRefreshFunction` functions
@@ -124,8 +140,8 @@ export class ChatManager {
 	async updateMessageId(message: MessageSearchParams, newid: string) {
 		const existingMessage = this.getMessage(message);
 		if (!existingMessage) return false;
-		this.log('updateMessageId', `${existingMessage.itemid}`, `-> ${newid}`);
-		(existingMessage as any).itemid = newid;
+		this.log('updateMessageId', `${existingMessage._id}`, `-> ${newid}`);
+		(existingMessage as any)._id = newid;
 		this.buildIndexMap();
 		await existingMessage.runRefreshFunction();
 		return true;
@@ -144,7 +160,7 @@ export class ChatManager {
 			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
 
 		//make sure the messages are not already loaded :
-		const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s.itemid]);
+		const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s._id]);
 
 		this.log(
 			'sendNewMessage',
@@ -208,7 +224,7 @@ export class ChatManager {
 			if (this.topMessage?._created_date)
 				search_query._created_date = { $lte: this.topMessage?._created_date };
 		}
-		search_query.exclude = this.currentItems.map((r) => r.itemid);
+		search_query.exclude = this.currentItems.map((r) => r._id);
 
 		this.#lastLoadDirection = direction;
 
@@ -338,7 +354,7 @@ export class ChatManager {
 		this.itemsIndexMap = {};
 		for (let index = 0; index < this.currentItems.length; index++) {
 			const element = this.currentItems[index];
-			this.itemsIndexMap[element.itemid] = index;
+			this.itemsIndexMap[element._id] = index;
 		}
 	}
 	/**
@@ -376,20 +392,20 @@ export class ChatManager {
 			//console.log('loaded less items than expected. updating max/min');
 			if (this.lastLoadDirection === LoadDirection.DOWN) this.updateBottomMessage();
 			else if (this.lastLoadDirection === LoadDirection.UP)
-				this.id_veryTopMessage = this.topMessage?.itemid;
+				this.id_veryTopMessage = this.topMessage?._id;
 		} else {
 			// clear top/bot if we are in middle of the list
 			// so we can correctly detect new messages that are added below the veryBottomMessage
-			if (this.id_veryBottomMessage != this.bottomMessage?.itemid) {
+			if (this.id_veryBottomMessage != this.bottomMessage?._id) {
 				this.id_veryBottomMessage = -1;
 			}
-			if (this.id_veryTopMessage != this.topMessage?.itemid) {
+			if (this.id_veryTopMessage != this.topMessage?._id) {
 				this.id_veryTopMessage = -1;
 			}
 		}
 	}
 	private updateBottomMessage() {
-		this.id_veryBottomMessage = this.bottomMessage?.itemid;
+		this.id_veryBottomMessage = this.bottomMessage?._id;
 	}
 
 	/* ----------------------------------- log ---------------------------------- */
@@ -441,14 +457,13 @@ export class ChatManager {
 			this.lastOperation != ChangeOperation.NONE
 		)
 			return true;
-		return this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
+		return this.topMessage != null && this.topMessage._id === this.id_veryTopMessage;
 	}
 
 	/* the message at the very bottom of the list is visible Or not defined */
 	get veryBottomMessageVisible() {
 		return (
-			this.bottomMessage == null ||
-			this.bottomMessage.itemid === this.id_veryBottomMessage
+			this.bottomMessage == null || this.bottomMessage._id === this.id_veryBottomMessage
 		);
 	}
 
@@ -497,7 +512,7 @@ export class ChatManager {
 	 */
 	public static item_sort(a: ChatItem, b: ChatItem, sortdir = 1) {
 		let dtCmp = a._created_time - b._created_time;
-		if (dtCmp === 0 && a.itemid && b.itemid) dtCmp = a.itemid.localeCompare(b.itemid);
+		if (dtCmp === 0 && a._id && b._id) dtCmp = a._id.localeCompare(b._id);
 		if (dtCmp === 0 && a.data.text && b.data.text)
 			dtCmp = a.data.text.localeCompare(b.data.text);
 		return dtCmp * sortdir;

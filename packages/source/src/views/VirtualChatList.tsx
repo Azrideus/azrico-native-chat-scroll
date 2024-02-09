@@ -168,12 +168,11 @@ const RowRender = React.memo((props: RowRenderProps) => {
 	
 	chatitem.refreshFunction = forceUpdate;
 	chatitem.itemref = itemref;
-	
 	return (
 		<li
 			ref={itemref}
-			key={chatitem.key}
-			id={'msg-' + chatitem.itemid}
+			key={chatitem._id}
+			id={'msg-' + chatitem._id}
 			className={`azchat-item${props.className != null ? ` ${props.className}` : ''}`}
 		>
 			<props.ItemRender

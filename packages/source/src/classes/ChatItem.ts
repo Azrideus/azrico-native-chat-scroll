@@ -7,12 +7,12 @@ export class ChatItem {
 	readonly key: string;
 	readonly data: ItemData;
 
+	readonly _id: string;
 	readonly _creator: string;
 	readonly _created_date: Date;
 	readonly _created_time: number;
 	readonly managerClass: ChatManager;
 
-	readonly itemid: string;
 	private __options: any = {};
 
 	public previtem?: ChatItem;
@@ -28,8 +28,8 @@ export class ChatItem {
 		this.data = d ?? {};
 
 		//get the id from data
-		this.itemid = ChatItem.getObjectId(this.data) || UIDHelper.nextid();
-		this.key = String(this.itemid);
+		this._id = ChatItem.getObjectId(this.data) || UIDHelper.nextid();
+		this.key = String(this._id);
 
 		//assign the date
 		this._created_date = ChatItem.getObjectDate(this.data);
