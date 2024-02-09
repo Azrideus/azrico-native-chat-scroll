@@ -31,6 +31,7 @@ export type LoadFunctionType = (props: SearchQuery) => Promise<ItemData[]> | Ite
 export type RefreshFunctionType = () => any;
 
 type SetItemsFunctionType = (items: ChatItem[]) => any;
+type MessageSearchParams = ChatItem | ItemData | string | number;
 
 export class ChatManager {
 	static WRAPPER_HEIGHT = 400;
@@ -40,8 +41,8 @@ export class ChatManager {
 	//we update scroll positions relative to this item to prevent the scroll from jumping
 	private referenceItem: ChatItem | undefined;
 
-	private currentItems: ChatItem[] = [];
-	private currentItemsMap: { [key: string]: ChatItem } = {};
+	#currentItems: ChatItem[] = [];
+	private itemsIndexMap: { [key: string]: number } = {};
 
 	private isLastLoadFromDB: boolean = true;
 	public isSticky: boolean = true;
@@ -79,53 +80,87 @@ export class ChatManager {
 	}
 
 	/**
+	 * get message index by using its id
+	 * @param search
+	 */
+	getMessageIndex(search: MessageSearchParams): number {
+		let msgid = '';
+		if (!search) return -1;
+		if (typeof search === 'object')
+			msgid = search instanceof ChatItem ? search.itemid : search._id;
+		else msgid = String(search);
+		const itemIndex = this.itemsIndexMap[msgid];
+		if (!itemIndex || itemIndex < 0) return -1;
+		return itemIndex;
+	}
+	/**
+	 * get a message by using its id
+	 * @param search
+	 */
+	getMessage(search: MessageSearchParams): ChatItem | undefined {
+		const itemIndex = this.getMessageIndex(search);
+		if (itemIndex < 0) return undefined;
+		return this.currentItems[itemIndex];
+	}
+	/**
 	 * delete the given message from the list
 	 * @param msg
 	 */
-	async deleteMessage(msg: ChatItem | ItemData) {
-		const msgid = msg instanceof ChatItem ? msg.itemid : msg._id;
-		const messagesToDelete = this.currentItemsMap[msgid];
-		if (messagesToDelete) {
-			const rmIndex = this.currentItems.findIndex((s) => s === messagesToDelete);
-			//
-			const newArr = [...this.currentItems];
-			newArr.splice(rmIndex, 1);
-			await this.setItems(newArr);
-		}
+	async deleteMessage(msg: MessageSearchParams): Promise<boolean> {
+		const rmIndex = this.getMessageIndex(msg);
+		if (rmIndex < 0) return false;
+		const newArr = [...this.currentItems];
+		newArr.splice(rmIndex, 1);
+		await this._setItems(newArr);
+		return true;
 	}
+	/**
+	 * change id of a message.
+	 * will run the `chatManager.buildIndexMap` and `chatItem.runRefreshFunction` functions
+	 * @param message
+	 * @param newid
+	 * @returns true if success, false otherwise
+	 */
+	async updateMessageId(message: MessageSearchParams, newid: string) {
+		const existingMessage = this.getMessage(message);
+		if (!existingMessage) return false;
+		this.log('updateMessageId', `${existingMessage.itemid}`, `-> ${newid}`);
+		(existingMessage as any).itemid = newid;
+		this.buildIndexMap();
+		await existingMessage.runRefreshFunction();
+		return true;
+	}
+
 	/**
 	 * add a new message to the bottom of the list
 	 * @param msglist
-	 * @returns if the message was added
+	 * @returns number of added messages
 	 */
-	async sendNewMessage(...msglist: Array<ChatItem | any>): Promise<boolean> {
+	async sendNewMessage(...msglist: Array<ChatItem | any>): Promise<number> {
+		// convert inputs to ChatItem
 		const messagesToAdd = msglist
 			.flat()
 			.filter((s) => s)
 			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
+
+		//make sure the messages are not already loaded :
+		const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s.itemid]);
+
 		this.log(
 			'sendNewMessage',
 			`• msglist: ${msglist.length}`,
-			`• messagesToAdd: ${messagesToAdd.length}`
-		);
-		//make sure the messages are not already loaded :
-		const newMessagesToAdd = messagesToAdd.filter(
-			(s) => this.currentItemsMap[s.itemid] == null
+			`• messagesToAdd: ${messagesToAdd.length}`,
+			`• newMessagesToAdd: ${newMessagesToAdd.length}`
 		);
 
-		if (newMessagesToAdd.length === 0) return false;
+		if (newMessagesToAdd.length === 0) return 0;
 		if (this.veryBottomMessageVisible) {
-			// console.log('add Message:', messagesToAdd);
-			const addCount = await this.add_items_to_list(
-				newMessagesToAdd,
-				LoadDirection.DOWN,
-				false
-			);
-			//if a new message is added the bottom message must change:
+			const addCount = await this._addItems(newMessagesToAdd, LoadDirection.DOWN, false);
+			//if a new message is added the bottom message must change
 			this.updateBottomMessage();
-			return addCount > 0;
+			return addCount;
 		}
-		return false;
+		return 0;
 	}
 
 	/**
@@ -135,14 +170,13 @@ export class ChatManager {
 	 */
 	async loadIfNeeded() {
 		let loadDir = LoadDirection.NONE;
- 
 
 		if (this.shouldLoadTop) loadDir = LoadDirection.UP;
 		else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
 		else return;
 
 		if (this.currentLoadOperation != null) await this.currentLoadOperation;
-		this.currentLoadOperation = this.load_items(loadDir);
+		this.currentLoadOperation = this.fetch_items(loadDir);
 		return await this.currentLoadOperation;
 	}
 	async loadForNewMessages() {
@@ -150,14 +184,15 @@ export class ChatManager {
 		await this.loadIfNeeded();
 	}
 
-	
-	public updateMessageId(msg: ChatItem, newid: string) {
-	}
+	/* -------------------------------------------------------------------------- */
+	/*                              private functions                             */
+	/* -------------------------------------------------------------------------- */
+
 	/**
 	 * load more items in the given direction
 	 * @param direction
 	 */
-	private async load_items(direction: LoadDirection = LoadDirection.UP) {
+	private async fetch_items(direction: LoadDirection = LoadDirection.UP) {
 		if (!this.loadFunction) return;
 
 		const search_query: SearchQuery = {
@@ -195,7 +230,7 @@ export class ChatManager {
 			.map((r, i) => new ChatItem(this, r))
 			/* ----------------------------- sort the items ----------------------------- */
 			.sort(ChatManager.item_sort);
-		await this.add_items_to_list(final_chats, direction, true);
+		await this._addItems(final_chats, direction, true);
 	}
 
 	/**
@@ -205,47 +240,38 @@ export class ChatManager {
 	 * @param isFromDB
 	 * @returns
 	 */
-	private async add_items_to_list(
+	private async _addItems(
 		items_to_add: ChatItem[],
 		direction: LoadDirection = LoadDirection.UP,
 		isFromDB: boolean = true
 	): Promise<number> {
 		this.#lastOperation =
 			direction === LoadDirection.UP ? ChangeOperation.ADD_UP : ChangeOperation.ADD_DOWN;
-
 		this.isLastLoadFromDB = isFromDB;
 
-		const nextItems = [...this.currentItems];
+		const resultItems = [...this.currentItems];
 		if (direction === LoadDirection.UP) {
 			//add above the list
-			nextItems.unshift(...items_to_add);
+			resultItems.unshift(...items_to_add);
 		} else {
 			//add below the list
-			nextItems.push(...items_to_add);
+			resultItems.push(...items_to_add);
 		}
-
-		await this.setItems(nextItems);
+		await this._setItems(resultItems);
 		return items_to_add.length;
 	}
 
 	/**
 	 * set all current items
-	 * @param items 
-	 * @returns 
+	 * @param items
+	 * @returns
 	 */
-	private async setItems(items: ChatItem[]): Promise<number> {
+	private async _setItems(items: ChatItem[]): Promise<number> {
 		this.before_update();
 		this.currentItems = this.cleanExtraItems(items);
-
-		//set the item map
-		this.currentItemsMap = {};
-		this.currentItems.forEach((r) => (this.currentItemsMap[r.itemid] = r));
-
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
-		//console.log('setitems', this.currentItems);
-		this.check_position();
-		this.update_next_prev_items();
+		this.after_update();
 
 		this.log(
 			'setItems',
@@ -287,37 +313,11 @@ export class ChatManager {
 		return resultItems;
 	}
 
-	private update_next_prev_items() {
-		const maxindex = this.currentItems.length - 1;
-		this.currentItems.map((r, i) => {
-			r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
-			r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
-		});
-
-		// let breakNextLoop = false;
-		// if (this.lastOperation === ChangeOperation.ADD_UP)
-		// 	for (let i = 0; i < this.currentItems.length; i++) {
-		// 		if (breakNextLoop) break;
-		// 		const r = this.currentItems[i];
-		// 		if (r.nextitem && r.previtem) breakNextLoop = true;
-		//
-		// 		r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
-		// 		r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
-		// 	}
-		// else if(this.lastOperation === ChangeOperation.ADD_DOWN)
-		// 	for (let i = this.currentItems.length - 1; i >= 0; i--) {
-		// 		if (breakNextLoop) break;
-		// 		const r = this.currentItems[i];
-		// 		if (r.nextitem && r.previtem) breakNextLoop = true;
-		//
-		// 		r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
-		// 		r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
-		// 	}
-	}
-
+	/**
+	 * set reference to an item that is in view.
+	 * we do this to make sure our reference item doesnt get unloaded
+	 */
 	private before_update() {
-		//set reference to an item that is in view
-		//we do this to make sure our reference item doesnt get unloaded
 		if (this.lastLoadDirection === LoadDirection.UP) {
 			this.referenceItem = this.topMessage;
 		} else if (this.lastLoadDirection === LoadDirection.DOWN) {
@@ -325,6 +325,34 @@ export class ChatManager {
 		}
 		this.referenceItem?.savePosition();
 	}
+	private after_update() {
+		this.buildIndexMap();
+		this.check_position();
+		this.update_next_prev_items();
+	}
+	/**
+	 * set the `itemsIndexMap`
+	 */
+	private buildIndexMap() {
+		//set the item map
+		this.itemsIndexMap = {};
+		for (let index = 0; index < this.currentItems.length; index++) {
+			const element = this.currentItems[index];
+			this.itemsIndexMap[element.itemid] = index;
+		}
+	}
+	/**
+	 * update `nextitem` and `previtem` for every message
+	 */
+	private update_next_prev_items() {
+		const maxindex = this.currentItems.length - 1;
+		for (let i = 0; i < this.currentItems.length; i++) {
+			const r = this.currentItems[i];
+			r.nextitem = i != maxindex ? this.currentItems[i + 1] : undefined;
+			r.previtem = i != 0 ? this.currentItems[i - 1] : undefined;
+		}
+	}
+
 	/**
 	 * check if we reached the bottom or top of the list
 	 */
@@ -333,11 +361,9 @@ export class ChatManager {
 			this.updateBottomMessage();
 			return;
 		}
-
 		/* -------------------------------------------------------------------------- */
 		/*                          Loading Something from DB                         */
 		/* -------------------------------------------------------------------------- */
-
 		if (!this.id_veryBottomMessage) {
 			//if bottom message is not set yet (first load), set it to the current bottom item
 			//if the bottom message id is -1 this will not run !
@@ -366,13 +392,20 @@ export class ChatManager {
 		this.id_veryBottomMessage = this.bottomMessage?.itemid;
 	}
 
-	/* -------------------------------------------------------------------------- */
-
-	log(...msg: any[]) {
+	/* ----------------------------------- log ---------------------------------- */
+	private log(...msg: any[]) {
 		if (this.show_logs) console.log('[react-chatscroll]', ...msg);
 	}
-	
+
 	/* --------------------------------- getters -------------------------------- */
+	get currentItems() {
+		return this.#currentItems;
+	}
+	set currentItems(v) {
+		this.#currentItems = v;
+		this.buildIndexMap();
+	}
+
 	get topMessageDate(): number | undefined {
 		return this.topMessage?._created_time ?? undefined;
 	}
@@ -411,7 +444,6 @@ export class ChatManager {
 		return this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
 	}
 
-	 
 	/* the message at the very bottom of the list is visible Or not defined */
 	get veryBottomMessageVisible() {
 		return (
@@ -453,7 +485,8 @@ export class ChatManager {
 	}
 
 	/* -------------------------------------------------------------------------- */
-
+	/*                              static functions                              */
+	/* -------------------------------------------------------------------------- */
 	/**
 	 * returns which item should come first, A or B
 	 * if A > B returns positive

@@ -1,5 +1,6 @@
 import React from 'react';
 import VirtualChatList, {
+	ChatItem,
 	ChatManager,
 	TestChatLoader,
 } from '@azrideus/react-chat-scroll';
@@ -22,7 +23,7 @@ export function Examplechatscroll() {
 		if (!firsttime) {
 			const newMsg = {
 				_id: 'spam-' + TestChatLoader.getExampleChatLenght(),
-				user: 'spammer',
+				_creator: 'spammer',
 				text: 'spam: ' + TestChatLoader.getExampleChatLenght(),
 				date: new Date(),
 			};
@@ -40,7 +41,7 @@ export function Examplechatscroll() {
 		if (message) {
 			const newMsg = {
 				_id: 'new-' + TestChatLoader.getExampleChatLenght(),
-				user: 'me',
+				_creator: 'me',
 				text: message,
 				date: new Date(),
 			};
@@ -50,6 +51,7 @@ export function Examplechatscroll() {
 
 		return false;
 	}
+
 	return (
 		<div
 			style={{
@@ -124,9 +126,9 @@ function TopContent(props: any) {
 }
 function ItemRender(props: any) {
 	const item = props.item;
+	const chatitem = props.chatitem as ChatItem;
 	const previtem = props.previtem;
 	if (!item) return <div>item</div>;
- 
 
 	const isByMe = item._creator === 'me';
 	const needProfile = previtem?._creator != item._creator;
@@ -165,7 +167,14 @@ function ItemRender(props: any) {
 							<b>{item._creator}</b>
 						</>
 					)}
-					<button onClick={() => props.chatitem.Delete()}>delete</button>
+					<button onClick={() => chatitem.Delete()}>delete</button>
+					<button
+						onClick={() => {
+							chatitem.updateId('blahblah');
+						}}
+					>
+						refresh
+					</button>
 				</div>
 
 				<p style={{ whiteSpace: 'pre-line' }}>{item.text}</p>
