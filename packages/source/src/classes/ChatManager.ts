@@ -1,5 +1,5 @@
 import { ChatItem, ItemData } from './ChatItem';
-import { UIDHelper } from './UIDHelper';
+ 
 
 //max number of items we keep in cache
 const MAX_LOAD = 65;

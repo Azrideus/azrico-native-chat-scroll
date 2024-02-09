@@ -1,5 +1,5 @@
 import { Ref } from 'react';
-import { UIDHelper } from './UIDHelper';
+import { UIDHelper } from './HelperFunctions';
 import ChatManager from './ChatManager';
 
 export type ItemData = any;

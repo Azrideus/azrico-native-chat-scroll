@@ -1,6 +1,6 @@
 import { ChatManager } from '../classes/ChatManager';
 import { ChatItem } from '../classes/ChatItem';
-import { UIDHelper } from '../classes/UIDHelper';
+import { UIDHelper } from '../classes/HelperFunctions';
 
 type TestSearchProps = { [key: string]: any } & Partial<{
 	skip: number;

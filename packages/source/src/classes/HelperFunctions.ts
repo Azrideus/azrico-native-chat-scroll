@@ -49,3 +49,9 @@ export function currentDistanceToBottom(inner: HTMLElement, outer: HTMLElement) 
 export function useForceUpdate() {
 	return React.useReducer((x) => (x + 1) % 100, 0);
 }
+export class UIDHelper {
+	static currentid = 0;
+	static nextid() {
+		return UIDHelper.currentid++;
+	}
+}
