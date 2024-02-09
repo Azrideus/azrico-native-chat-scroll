@@ -1,6 +1,6 @@
 import '../styles/styles.css';
 import React from 'react';
-import { useSize, currentDistanceToBottom, sizeResult } from '../classes/SizeHelper';
+import { useSize, currentDistanceToBottom, sizeResult, useForceUpdate } from '../classes/HelperFunctions';
 import { ChatItem, ItemData } from '../classes/ChatItem';
 import ChatManager, {
 	LoadFunctionType,
@@ -129,14 +129,14 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 							);
 						})}
 					</ol>
-					{!chatManager.isAtVeryBottom && (
+					{!chatManager.veryBottomMessageVisible && (
 						<div className={'azchat-wrapper wrapper-bottom'}>
 							{props.WrapperContent && <props.WrapperContent />}
 						</div>
 					)}
 
 					<div ref={bottomRef} className="azchat-bottom-item">
-						{chatManager.isAtVeryBottom && props.BottomContent && <props.BottomContent />}
+						{chatManager.veryBottomMessageVisible && props.BottomContent && <props.BottomContent />}
 					</div>
 				</div>
 			</div>
@@ -162,9 +162,13 @@ export type ItemRenderProps = {
 };
 const RowRender = React.memo((props: RowRenderProps) => {
 	const itemref = React.useRef<any>();
+	const [updateKey, forceUpdate] = useForceUpdate();
 
 	const chatitem = props.item;
+	
+	chatitem.refreshFunction = forceUpdate;
 	chatitem.itemref = itemref;
+	
 	return (
 		<li
 			ref={itemref}

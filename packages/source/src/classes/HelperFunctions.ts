@@ -46,3 +46,6 @@ export function useSize(ref: any): sizeResult {
 export function currentDistanceToBottom(inner: HTMLElement, outer: HTMLElement) {
 	return inner.offsetHeight - outer.scrollTop - outer.offsetHeight;
 }
+export function useForceUpdate() {
+	return React.useReducer((x) => (x + 1) % 100, 0);
+}

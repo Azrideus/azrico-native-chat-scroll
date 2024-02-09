@@ -114,9 +114,7 @@ export class ChatManager {
 		);
 
 		if (newMessagesToAdd.length === 0) return false;
-		if (this.isAtVeryBottom) {
-			//we are at the bottom of the list, new messages should be added
-
+		if (this.veryBottomMessageVisible) {
 			// console.log('add Message:', messagesToAdd);
 			const addCount = await this.add_items_to_list(
 				newMessagesToAdd,
@@ -152,6 +150,9 @@ export class ChatManager {
 		await this.loadIfNeeded();
 	}
 
+	
+	public updateMessageId(msg: ChatItem, newid: string) {
+	}
 	/**
 	 * load more items in the given direction
 	 * @param direction
@@ -410,8 +411,9 @@ export class ChatManager {
 		return this.topMessage != null && this.topMessage.itemid === this.id_veryTopMessage;
 	}
 
-	/* we are at the very bottom. we cant go down anymore */
-	get isAtVeryBottom() {
+	 
+	/* the message at the very bottom of the list is visible Or not defined */
+	get veryBottomMessageVisible() {
 		return (
 			this.bottomMessage == null ||
 			this.bottomMessage.itemid === this.id_veryBottomMessage
@@ -429,7 +431,7 @@ export class ChatManager {
 		return this.isCloseToTop && !this.isAtVeryTop;
 	}
 	get shouldLoadDown() {
-		return this.isCloseToBottom && !this.isAtVeryBottom;
+		return this.isCloseToBottom && !this.veryBottomMessageVisible;
 	}
 
 	/* number of changed items in the last load */

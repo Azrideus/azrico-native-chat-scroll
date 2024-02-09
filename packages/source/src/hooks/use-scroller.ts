@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import ChatManager, { ChangeOperation } from '../classes/ChatManager';
-import { currentDistanceToBottom } from '../classes/SizeHelper';
+import { currentDistanceToBottom } from '../classes/HelperFunctions';
 import React from 'react';
 
 type ChatScrollProps = {

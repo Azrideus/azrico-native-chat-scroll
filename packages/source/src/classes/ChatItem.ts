@@ -5,7 +5,6 @@ import ChatManager from './ChatManager';
 export type ItemData = any;
 export class ChatItem {
 	readonly key: string;
-	readonly itemid: string;
 	readonly data: ItemData;
 
 	readonly _creator: string;
@@ -13,6 +12,7 @@ export class ChatItem {
 	readonly _created_time: number;
 	readonly managerClass: ChatManager;
 
+	readonly itemid: string;
 	private __options: any = {};
 
 	public previtem?: ChatItem;
@@ -20,6 +20,7 @@ export class ChatItem {
 
 	public isNew: boolean = false;
 	public itemref?: React.MutableRefObject<any>;
+	public refreshFunction?: Function;
 
 	constructor(mng: ChatManager, d: ItemData) {
 		//set the data
@@ -36,6 +37,11 @@ export class ChatItem {
 
 		//assign creator
 		this._creator = this.data._creator;
+	}
+
+	 
+	runRefreshFunction() {
+		return typeof this.refreshFunction === 'function' && this.refreshFunction();
 	}
 
 	savePosition() {
