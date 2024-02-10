@@ -19,17 +19,7 @@ module.exports = (config, env) => {
 		rootdir = path.resolve('../..');
 	}
 
-	const folders = ['packages'];
-	const result_paths = [];
-
-	for (let index = 0; index < folders.length; index++) {
-		const current_folder = folders[index];
-		const packageFolders = fs.readdirSync(path.resolve(`${rootdir}/${current_folder}`));
-		const packageFiles = packageFolders.map((fld) =>
-			fs.realpathSync(path.resolve(`${rootdir}/${current_folder}/${fld}/src`))
-		);
-		result_paths.push(...packageFiles);
-	}
+ 
 
 	config = Object.assign(
 		// rewireReactHotLoader(config),
@@ -82,7 +72,7 @@ module.exports = (config, env) => {
 				cldr$: 'cldrjs',
 			}),
 			useBabelRc(),
-			babelInclude([path.resolve('src'), ...result_paths])
+			babelInclude([path.resolve('src')])
 			// addDecoratorsLegacy(),
 		)(config, env)
 	);

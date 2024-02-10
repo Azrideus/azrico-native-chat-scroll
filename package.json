@@ -4,17 +4,13 @@
 	"main": "source/index.tsx",
 	"private": true,
 	"scripts": {
-		"build": "rimraf dist && yarn run tsc && yarn run cp_themes && yarn run babel",
+		"dev": "yarn run start",
+		"start": "yarn run build && cd demo && yarn run start",
+		"build": "rimraf dist && yarn run tsc && yarn run babel",
 		"tsc": "tsc",
-		"cp_themes": "copyfiles ./src/*/*.css ./dist/",
 		"babel": "babel dist --out-dir dist",
 		"test": "jest",
 		"publish_default": "npm publish --access public --tag latest;"
-	},
-	"workspaces": {
-		"packages": [
-			"packages/*"
-		]
 	},
 	"devDependencies": {
 		"@babel/cli": "^7.13.14",
@@ -31,6 +27,7 @@
 		"babel-preset-minify": "^0.5.1",
 		"customize-cra": "^1.0.0",
 		"html-loader": "^4.2.0",
+		"metro-react-native-babel-preset": "^0.77.0",
 		"raw-loader": "^4.0.2",
 		"react-app-rewired": "^2.2.1",
 		"react-dom": "^18.2.0",
