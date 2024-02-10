@@ -10,7 +10,7 @@
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0"
 	},
-	"config-overrides-path": "../../config/config-overrides.js",
+	"config-overrides-path": "../config/config-overrides.js",
 	"browserslist": {
 		"production": [
 			">0.2%",

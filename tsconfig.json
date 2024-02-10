@@ -69,5 +69,12 @@
 		"forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */
 	},
 	"lib": ["esnext"],
-	"exclude": ["node_modules", "__tests__", "dist", "build", "packages/source/dist"]
+	"exclude": [
+		"node_modules",
+		"__tests__",
+		"dist",
+		"demo",
+		"build",
+		"packages/source/dist"
+	]
 }

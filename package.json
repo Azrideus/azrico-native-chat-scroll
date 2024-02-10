@@ -4,11 +4,12 @@
 	"main": "source/index.tsx",
 	"private": true,
 	"scripts": {
-		"dev": "yarn run start",
-		"start": "yarn run build && yarn workspace demo start",
-		"build": "yarn workspace @azrideus/react-chat-scroll build",
-		"publish_default": "yarn workspace @azrideus/react-chat-scroll publish_default",
-		"test": "jest"
+		"build": "rimraf dist && yarn run tsc && yarn run cp_themes && yarn run babel",
+		"tsc": "tsc",
+		"cp_themes": "copyfiles ./src/*/*.css ./dist/",
+		"babel": "babel dist --out-dir dist",
+		"test": "jest",
+		"publish_default": "npm publish --access public --tag latest;"
 	},
 	"workspaces": {
 		"packages": [
