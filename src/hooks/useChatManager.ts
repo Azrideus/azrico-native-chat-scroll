@@ -18,7 +18,8 @@ export function useChatManager({ managerRef, debug, loadFunction }: Props) {
 	if (managerRef) managerRef.current = chatManager;
 
 	React.useLayoutEffect(() => {
+		chatManager.set_loadFunction(loadFunction);
 		chatManager.show_logs = Boolean(debug);
-	}, [debug]);
+	}, [debug, loadFunction]);
 	return chatManager;
 }

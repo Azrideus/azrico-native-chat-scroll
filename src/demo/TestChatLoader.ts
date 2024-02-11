@@ -29,7 +29,6 @@ export class TestChatLoader {
 		filter_fnc?: (input: ChatItem[], props: TestSearchProps) => ChatItem[]
 	): Promise<any[]> {
 		let { skip, limit, _created_date, _creator, exclude, sort } = props;
-
 		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
 				let searchedItems: any[] = [...TestChatLoader.itemsInDB];
@@ -53,7 +52,6 @@ export class TestChatLoader {
 						);
 					}
 				}
-
 				if (Array.isArray(exclude)) {
 					searchedItems = searchedItems.filter((s) => !exclude.includes(s._id));
 				}

@@ -42,10 +42,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@azrico/types@npm:^1.0.9":
+  version: 1.0.9
+  resolution: "@azrico/types@npm:1.0.9"
+  checksum: 10/29be78e8c3ac234d05fa3c70c3bc1dabf7963a38087fe2aad995b1d993329c14eecc2cc00832a16fe49a93a55a2dbfc535abf150a3c11c406c7a094815a4398c
+  languageName: node
+  linkType: hard
+
 "@azrideus/react-chat-scroll@workspace:.":
   version: 0.0.0-use.local
   resolution: "@azrideus/react-chat-scroll@workspace:."
   dependencies:
+    "@azrico/types": "npm:^1.0.9"
     "@babel/cli": "npm:^7.13.14"
     "@babel/core": "npm:^7.13.15"
     "@babel/eslint-parser": "npm:^7.12.17"
@@ -55,30 +63,28 @@ __metadata:
     "@babel/preset-env": "npm:^7.13.15"
     "@babel/preset-react": "npm:^7.22.15"
     "@babel/preset-typescript": "npm:^7.14.5"
-    "@stream-io/flat-list-mvcp": "npm:^0.10.3"
     "@tanstack/react-query": "npm:^5.20.1"
+    "@types/lodash.debounce": "npm:^4"
     "@types/react": "npm:^18.2.21"
     "@types/react-dom": "npm:^18.0.8"
     babel-preset-minify: "npm:^0.5.1"
     customize-cra: "npm:^1.0.0"
     html-loader: "npm:^4.2.0"
+    lodash.debounce: "npm:^4.0.8"
     metro-react-native-babel-preset: "npm:^0.77.0"
     raw-loader: "npm:^4.0.2"
     react: "npm:^18.0.0"
     react-app-rewired: "npm:^2.2.1"
     react-dom: "npm:^18.2.0"
     react-native: "npm:^0.73.4"
-    react-native-bidirectional-infinite-scroll: "npm:^0.3.3"
     react-native-web: "npm:^0.19.10"
     react-scripts: "npm:^5.0.1"
     typescript: "npm:^4.8.4"
   peerDependencies:
-    "@stream-io/flat-list-mvcp": "*"
     "@tanstack/react-query": "*"
     react: "*"
     react-dom: "*"
     react-native: "*"
-    react-native-bidirectional-infinite-scroll: "*"
   languageName: unknown
   linkType: soft
 
@@ -3130,16 +3136,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@stream-io/flat-list-mvcp@npm:^0.10.3":
-  version: 0.10.3
-  resolution: "@stream-io/flat-list-mvcp@npm:0.10.3"
-  peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10/6e252533ca0a658a89aea57474a6df87bfedd71f01c8c723ca261070e2dd53d5876c2ba8db96c3689544bdaedff5e0d86638a89ae779424910e449d3c5322f1b
-  languageName: node
-  linkType: hard
-
 "@surma/rollup-plugin-off-main-thread@npm:^2.2.3":
   version: 2.2.3
   resolution: "@surma/rollup-plugin-off-main-thread@npm:2.2.3"
@@ -3520,6 +3516,22 @@ __metadata:
   version: 0.0.29
   resolution: "@types/json5@npm:0.0.29"
   checksum: 10/4e5aed58cabb2bbf6f725da13421aa50a49abb6bc17bfab6c31b8774b073fa7b50d557c61f961a09a85f6056151190f8ac95f13f5b48136ba5841f7d4484ec56
+  languageName: node
+  linkType: hard
+
+"@types/lodash.debounce@npm:^4":
+  version: 4.0.9
+  resolution: "@types/lodash.debounce@npm:4.0.9"
+  dependencies:
+    "@types/lodash": "npm:*"
+  checksum: 10/8183a152e01928e3b97ca773f6ae6038b8695e76493ba8bf6b743ec143948a62294fbc9d49fa4a78b52265b3ba4892ef57534e0c13d04aa0f111671b5a944feb
+  languageName: node
+  linkType: hard
+
+"@types/lodash@npm:*":
+  version: 4.14.202
+  resolution: "@types/lodash@npm:4.14.202"
+  checksum: 10/1bb9760a5b1dda120132c4b987330d67979c95dbc22612678682cd61b00302e190f4207228f3728580059cdab5582362262e3819aea59960c1017bd2b9fb26f6
   languageName: node
   linkType: hard
 
@@ -13070,17 +13082,6 @@ __metadata:
   version: 17.0.2
   resolution: "react-is@npm:17.0.2"
   checksum: 10/73b36281e58eeb27c9cc6031301b6ae19ecdc9f18ae2d518bdb39b0ac564e65c5779405d623f1df9abf378a13858b79442480244bd579968afc1faf9a2ce5e05
-  languageName: node
-  linkType: hard
-
-"react-native-bidirectional-infinite-scroll@npm:^0.3.3":
-  version: 0.3.3
-  resolution: "react-native-bidirectional-infinite-scroll@npm:0.3.3"
-  peerDependencies:
-    "@stream-io/flat-list-mvcp": ">=0.10.0"
-    react: "*"
-    react-native: "*"
-  checksum: 10/aaa6d2f556e2dba73bece391623dad34e5b75cc739eb37b91199ea753c856570ba89a6fe008abacee520dd239abe51ed59b210ed1135a34026a6f808b11014fc
   languageName: node
   linkType: hard
 

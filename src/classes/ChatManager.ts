@@ -1,10 +1,8 @@
 import { ChatItem, ItemData } from './ChatItem';
 
-//max number of items we keep in cache
-const MAX_LOAD = 65;
-
 //items we load in each batch
-const BATCH_SIZE = 30;
+const MAX_LOAD = 30;
+const BATCH_SIZE = 10;
 
 export enum LoadDirection {
 	DOWN = -1,
@@ -33,18 +31,24 @@ type SetItemsFunctionType = (items: ChatItem[]) => any;
 type MessageSearchParams = ChatItem | ItemData | string | number;
 
 export class ChatManager {
-	static WRAPPER_HEIGHT = 400;
-	static WRAPPER_BUFFER_HEIGHT = ChatManager.WRAPPER_HEIGHT + 200;
 	public show_logs = false;
+	public distanceToTop: number = 0;
+	public distanceToBottom: number = 0;
+	public loadBufferDistance: number = 800;
+	/* -------------------------------------------------------------------------- */
 
-	#currentItems: ChatItem[] = [];
-	private itemsIndexMap: { [key: string]: number } = {};
+	//we update scroll positions relative to this item to prevent the scroll from jumping
+	private referenceItem: ChatItem | undefined;
 
-	private isLastLoadFromDB: boolean = true;
-
+	/* -------------------------------------------------------------------------- */
+	#lastLoadDirection: LoadDirection = LoadDirection.NONE;
 	#lastOperation: ChangeOperation = ChangeOperation.NONE;
 	#lastCountChange: number = 0;
 	#lastDBLoad: number = 0;
+	#currentItems: ChatItem[] = [];
+	private isLastLoadFromDB: boolean = true;
+
+	private itemsIndexMap: { [key: string]: number } = {};
 
 	private setItemsFunction?: SetItemsFunctionType;
 
@@ -55,6 +59,8 @@ export class ChatManager {
 
 	private id_veryTopMessage?: any;
 	private id_veryBottomMessage?: any;
+
+	private currentLoadOperation?: any;
 
 	constructor() {}
 
@@ -153,6 +159,7 @@ export class ChatManager {
 		}
 		/* ------------------------------ update the id ----------------------------- */
 		(updateMessage as any)._id = newid;
+
 		this.buildIndexMap();
 		await this.refreshMessage(updateMessage);
 		this.log('updateMessageId', `${updateMessage._id}`, `-> ${newid}`);
@@ -164,7 +171,12 @@ export class ChatManager {
 	 * @param msglist
 	 * @returns number of added messages
 	 */
-	async sendNewMessage(...msglist: Array<ChatItem | any>): Promise<number> {
+	async sendNewMessage(
+		msglist: Array<ChatItem | any>,
+		dir = LoadDirection.DOWN
+	): Promise<number> {
+		if (!msglist) return 0;
+		if (!Array.isArray(msglist)) msglist = [msglist];
 		// convert inputs to ChatItem
 		const messagesToAdd = msglist
 			.flat()
@@ -174,16 +186,17 @@ export class ChatManager {
 		//make sure the messages are not already loaded :
 		const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s._id]);
 
-		this.log(
+		this.group_log(
 			'sendNewMessage',
-			`• msglist: ${msglist.length}`,
-			`• messagesToAdd: ${messagesToAdd.length}`,
-			`• newMessagesToAdd: ${newMessagesToAdd.length}`
+			['msglist', msglist.length],
+			['messagesToAdd', messagesToAdd.length],
+			['newMessagesToAdd', newMessagesToAdd.length],
+			['veryBottomMessageVisible', this.veryBottomMessageVisible]
 		);
 
 		if (newMessagesToAdd.length === 0) return 0;
 		if (this.veryBottomMessageVisible) {
-			const addCount = await this._addItems(newMessagesToAdd, false);
+			const addCount = await this._addItems(newMessagesToAdd, dir, false);
 			//if a new message is added the bottom message must change
 			this.updateBottomMessage();
 			return addCount;
@@ -191,47 +204,62 @@ export class ChatManager {
 		return 0;
 	}
 
-	/* -------------------------------------------------------------------------- */
-	/*                              private functions                             */
-	/* -------------------------------------------------------------------------- */
-
+	public async maybeLoad() {
+			console.log('maybeLoad');
+		let loadDir = LoadDirection.NONE;
+		if (this.shouldLoadTop) loadDir = LoadDirection.UP;
+		else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
+		else return;
+		return await this.fetch_items(loadDir);
+	}
 	/**
 	 * load more items in the given direction
 	 * @param direction
 	 */
-	public async fetch_page(pagenum) {
-		if (!this.loadFunction) return;
+	public async fetch_items(direction: LoadDirection = LoadDirection.UP) {
+		if (this.currentLoadOperation != null) await this.currentLoadOperation;
+		this.currentLoadOperation = this.fetch_items_inner(direction);
+		return await this.currentLoadOperation;
+	}
 
-		/* -------------------------------------------------------------------------- */
-		/*                           setup the search_query                           */
-		/* -------------------------------------------------------------------------- */
+	private async fetch_items_inner(direction: LoadDirection = LoadDirection.UP) {
+		if (!this.loadFunction) return;
 		const search_query: SearchQuery = {
 			limit: BATCH_SIZE,
 		};
 
-		search_query.sort = { _created_date: 1 };
-		if (this.bottomMessage?._created_date)
-			search_query._created_date = { $gte: this.bottomMessage?._created_date };
+		if (direction == LoadDirection.DOWN) {
+			search_query.sort = { _created_date: 1 };
+			if (this.bottomMessage?._created_date)
+				search_query._created_date = { $gte: this.bottomMessage?._created_date };
+		} else {
+			search_query.sort = { _created_date: -1 };
+			if (this.topMessage?._created_date)
+				search_query._created_date = { $lte: this.topMessage?._created_date };
+		}
 
-		search_query.exclude = this.currentItems.map((r) => r._id);
-
+		search_query.exclude = Object.keys(this.itemsIndexMap);
+ 
 		const loaded_items = await this.loadFunction(search_query);
-		this.log(
-			'load_items',
-			`• search_query: `,
-			search_query,
-			`• loaded_items: ${loaded_items.length}`
-		);
-		//
 		this.#lastDBLoad = loaded_items.length;
 
 		/* ------------------------ convert items to ChatItem ----------------------- */
 		let final_chats = loaded_items
 			.map((r, i) => new ChatItem(this, r))
-			/* ----------------------------- sort the items ----------------------------- */
 			.sort(ChatManager.item_sort);
-		await this._addItems(final_chats, true);
+
+		this.group_log(
+			'load_items',
+			[`direction:`, direction],
+			[`search_query:`, search_query],
+			[`final_chats:`, final_chats.length]
+		);
+		await this._addItems(final_chats, direction, true);
 	}
+
+	/* -------------------------------------------------------------------------- */
+	/*                              private functions                             */
+	/* -------------------------------------------------------------------------- */
 
 	/**
 	 * add the given items to given direction of current items
@@ -242,41 +270,97 @@ export class ChatManager {
 	 */
 	private async _addItems(
 		items_to_add: ChatItem[],
+		direction: LoadDirection = LoadDirection.UP,
 		isFromDB: boolean = true
 	): Promise<number> {
+		
+		
+		this.#lastLoadDirection = direction;
+		this.#lastOperation =
+			direction === LoadDirection.UP ? ChangeOperation.ADD_UP : ChangeOperation.ADD_DOWN;
 		this.isLastLoadFromDB = isFromDB;
 
 		const resultItems = [...this.currentItems];
-		//add below the list
-		resultItems.push(...items_to_add);
-		/* -------------------------------------------------------------------------- */
+		if (direction === LoadDirection.UP) {
+			//add above the list
+			resultItems.unshift(...items_to_add);
+		} else {
+			//add below the list
+			resultItems.push(...items_to_add);
+		}
 		await this._setItems(resultItems);
 		return items_to_add.length;
 	}
-
 	/**
 	 * set all current items
 	 * @param items
 	 * @returns
 	 */
 	private async _setItems(items: ChatItem[]): Promise<number> {
-		this.currentItems = items;
+		
+		this.currentItems = this.cleanExtraItems(items);
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
 		this.after_update();
-		this.log(
+		this.update_reference();
+
+		this.group_log(
 			'setItems',
-			`• search_query: `,
-			`• currentItems: ${this.currentItems.length}`,
-			`• lastCountChange: ${this.#lastCountChange}`
+			['lastCountChange', this.lastCountChange],
+			['items', this.currentItems],
+			['itemsIndexMap', Object.keys(this.itemsIndexMap).length, this.itemsIndexMap]
 		);
+
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
 		return this.currentItems.length;
 	}
 
+	/**
+	 * clear items in the given list to match the max item count
+	 */
+	private cleanExtraItems(inputItems: ChatItem[]): ChatItem[] {
+		if (inputItems.length <= MAX_LOAD) return inputItems;
+		let countToRemove = Math.abs(MAX_LOAD - inputItems.length + 10);
+
+		let dirToRemove = LoadDirection.NONE;
+
+		if (this.lastLoadDirection === LoadDirection.UP && !this.isCloseToBottom) {
+			dirToRemove = LoadDirection.DOWN;
+		} else if (this.lastLoadDirection === LoadDirection.DOWN && !this.isCloseToTop) {
+			dirToRemove = LoadDirection.UP;
+		}
+
+		countToRemove = Math.min((countToRemove), inputItems.length);
+		if (countToRemove === 0 || dirToRemove === LoadDirection.NONE) return inputItems;
+
+		let resultItems = [...inputItems];
+		//
+		if (dirToRemove === LoadDirection.UP) {
+			//remove from top
+			resultItems.splice(0, countToRemove);
+		} else if (dirToRemove === LoadDirection.DOWN) {
+			const rmStartIndex = Math.max(resultItems.length - countToRemove, 0);
+			resultItems.splice(rmStartIndex);
+		}
+		return resultItems;
+	}
+
+	/**
+	 * set reference to an item that is in view.
+	 * we do this to make sure our reference item doesnt get unloaded
+	 */
+	private update_reference() {
+		if (this.lastLoadDirection === LoadDirection.UP) {
+			this.referenceItem = this.topMessage;
+		} else if (this.lastLoadDirection === LoadDirection.DOWN) {
+			this.referenceItem = this.bottomMessage;
+		}
+		this.referenceItem?.savePosition();
+	}
+
 	private after_update() {
-		this.buildIndexMap();
 		this.update_next_prev_items();
+		this.check_position();
 	}
 	/**
 	 * set the `itemsIndexMap`
@@ -288,6 +372,11 @@ export class ChatManager {
 			const element = this.currentItems[index];
 			this.itemsIndexMap[element._id] = index;
 		}
+		//this.group_log(
+		//	'buildIndexMap',
+		//	['currentItems', this.currentItems.length],
+		//	['itemsIndexMap', Object.keys(this.itemsIndexMap).length, this.itemsIndexMap]
+		//);
 	}
 	/**
 	 * update `nextitem` and `previtem` for every message
@@ -301,16 +390,93 @@ export class ChatManager {
 		}
 	}
 
+	/**
+	 * check if we reached the bottom or top of the list
+	 */
+	private check_position() {
+		if (!this.isLastLoadFromDB) {
+			this.updateBottomMessage();
+			return;
+		}
+		/* -------------------------------------------------------------------------- */
+		/*                          Loading Something from DB                         */
+		/* -------------------------------------------------------------------------- */
+		if (!this.id_veryBottomMessage) {
+			//if bottom message is not set yet (first load), set it to the current bottom item
+			//if the bottom message id is -1 this will not run !
+			this.updateBottomMessage();
+		}
+
+		/* ---------------- loading less than limit means end of chat --------------- */
+		//we load less items than limit -> we have reached the top/bottom of the chat
+		if (this.#lastDBLoad < BATCH_SIZE) {
+			//console.log('loaded less items than expected. updating max/min');
+			if (this.lastLoadDirection === LoadDirection.DOWN) this.updateBottomMessage();
+			else if (this.lastLoadDirection === LoadDirection.UP)
+				this.id_veryTopMessage = this.topMessage?._id;
+		} else {
+			// clear top/bot if we are in middle of the list
+			// so we can correctly detect new messages that are added below the veryBottomMessage
+			if (this.id_veryBottomMessage != this.bottomMessage?._id) {
+				this.id_veryBottomMessage = -1;
+			}
+			if (this.id_veryTopMessage != this.topMessage?._id) {
+				this.id_veryTopMessage = -1;
+			}
+		}
+	}
 	private updateBottomMessage() {
 		this.id_veryBottomMessage = this.bottomMessage?._id;
 	}
 
 	/* ----------------------------------- log ---------------------------------- */
+	private group_log(name: string, ...msg: any[]) {
+		if (this.show_logs) {
+			console.group(`[react-chatscroll] | ${name}`);
+			for (let index = 0; index < msg.length; index++) {
+				const elem = msg[index];
+				if (Array.isArray(elem)) console.log(...elem);
+				else console.log(elem);
+			}
+			console.groupEnd();
+		}
+	}
 	private log(...msg: any[]) {
 		if (this.show_logs) console.log('[react-chatscroll]', ...msg);
 	}
+	private log_error(...msg: any[]) {
+		console.error('[react-chatscroll]', ...msg);
+	}
 
 	/* --------------------------------- getters -------------------------------- */
+
+	get isSticky() {
+		return this.distanceToBottom < 100;
+	}
+	get isCloseToTop() {
+		return this.distanceToTop < this.loadBufferDistance;
+	}
+	get isCloseToBottom() {
+		return this.distanceToBottom < this.loadBufferDistance;
+	}
+
+	get shouldLoadTop() {
+		return this.isCloseToTop && !this.isAtVeryTop;
+	}
+	get shouldLoadDown() {
+		return this.isCloseToBottom && !this.veryBottomMessageVisible;
+	}
+	/* ----------------------------------- ref ---------------------------------- */
+	get referenceTop(): number {
+		return this.referenceItem?.topDistance ?? Number.NaN;
+	}
+	get referenceLastTop(): number {
+		return this.referenceItem?.lastTop ?? Number.NaN;
+	}
+	/* -------------------------------------------------------------------------- */
+	get lastLoadDirection(): LoadDirection {
+		return this.#lastLoadDirection;
+	}
 	get currentItems() {
 		return this.#currentItems;
 	}
@@ -326,18 +492,21 @@ export class ChatManager {
 		return this.bottomMessage?._created_time ?? undefined;
 	}
 
+	/* -------------------------------------------------------------------------- */
 	get topMessage(): ChatItem | undefined {
 		if (this.currentItems.length === 0) return undefined;
 		return this.currentItems[0];
 	}
 	get middleMessage(): ChatItem | undefined {
 		if (this.currentItems.length === 0) return undefined;
+		if (this.currentItems.length === 1) return this.currentItems[0];
 		return this.currentItems[Math.ceil(this.currentItems.length / 2)];
 	}
 	get bottomMessage(): ChatItem | undefined {
 		if (this.currentItems.length === 0) return undefined;
 		return this.currentItems[this.currentItems.length - 1];
 	}
+	/* -------------------------------------------------------------------------- */
 
 	/* we are at the very top. we cant go up anymore */
 	get isAtVeryTop() {

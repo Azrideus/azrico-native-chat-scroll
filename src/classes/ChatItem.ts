@@ -55,10 +55,10 @@ export class ChatItem {
 	}
 
 	get topDistance() {
-		return this.itemref?.current?.getBoundingClientRect().top || 0;
+		return this.itemref?.current?.getBoundingClientRect().top ?? 0;
 	}
 	get lastTop() {
-		return this.__options['lasttop'] || Number.NaN;
+		return this.__options['lasttop'] ?? Number.NaN;
 	}
 	static getObjectId(inp: any) {
 		return inp._id ?? inp.id;

@@ -2,6 +2,7 @@ import React from 'react';
 import VirtualChatList, {
 	ChatItem,
 	ChatManager,
+	LoadDirection,
 	TestChatLoader,
 } from '../index';
 
@@ -14,9 +15,9 @@ export function DemoChatScroll() {
 	const managerRef = React.useRef<ChatManager>();
 	const timerRef = React.useRef<any>();
 
-	async function addNewMsg(obj: any) {
+	async function addNewMsg(obj: any, dir = LoadDirection.DOWN) {
 		TestChatLoader.addExampleChat(obj);
-		await managerRef.current?.sendNewMessage(obj);
+		await managerRef.current?.sendNewMessage(obj, dir);
 	}
 	async function addLoop(firsttime = false) {
 		if (TestChatLoader.getExampleChatLenght() > 1000) return;
@@ -27,7 +28,7 @@ export function DemoChatScroll() {
 				text: 'spam: ' + TestChatLoader.getExampleChatLenght(),
 				date: new Date(),
 			};
-			await addNewMsg(newMsg);
+			//await addNewMsg(newMsg);
 		}
 
 		if (timerRef.current) clearTimeout(timerRef.current);
@@ -45,7 +46,7 @@ export function DemoChatScroll() {
 				text: message,
 				date: new Date(),
 			};
-			addNewMsg(newMsg);
+			addNewMsg(newMsg, LoadDirection.DOWN);
 			set_message('');
 		}
 
@@ -87,7 +88,7 @@ export function DemoChatScroll() {
 					}}
 				>
 					<VirtualChatList
-						debug
+						debug={true}
 						managerRef={managerRef as any}
 						ItemRender={ItemRender}
 						BottomContent={BottomContent}
@@ -128,7 +129,19 @@ function ItemRender(props: any) {
 	const item = props.item;
 	const chatitem = props.chatitem as ChatItem;
 	const previtem = props.previtem;
-	if (!item) return <div>item</div>;
+	if (typeof item !== 'object' || item == null)
+		return (
+			<div
+				style={{
+					height: '100px',
+					padding: '5px',
+					display: 'flex',
+					flexDirection: 'column',
+				}}
+			>
+				{String(item)}
+			</div>
+		);
 
 	const isByMe = item._creator === 'me';
 	const needProfile = previtem?._creator != item._creator;
