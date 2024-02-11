@@ -53,15 +53,30 @@ export class ChatItem {
 	async Delete() {
 		return await this.managerClass.deleteMessage(this);
 	}
-
-	get topDistance() {
+	/* -------------------------------------------------------------------------- */
+	get element() {
 		const itemref = this.itemref?.current;
-		if (!itemref) return Number.NaN;
-		return itemref.getBoundingClientRect().top ?? Number.NaN;
+		if (!itemref) return undefined;
+		return itemref;
 	}
+	get boundingClientRect() {
+		return this.element?.getBoundingClientRect();
+	}
+	get topDistance() {
+		return this.boundingClientRect?.top ?? Number.NaN;
+	}
+	get bottomDistance() {
+		return this.boundingClientRect?.bottom ?? Number.NaN;
+	}
+
+	get elementHeight() {
+		return this.boundingClientRect?.height ?? Number.NaN;
+	}
+
 	get lastTop() {
 		return this.__options['lasttop'] ?? Number.NaN;
 	}
+	/* -------------------------------------------------------------------------- */
 	static getObjectId(inp: any) {
 		return inp._id ?? inp.id;
 	}

@@ -13,7 +13,8 @@ import { View } from 'react-native';
 
 import { useChatQuery } from '../hooks';
 import { useLoadOnScroll } from '../hooks/useLoadOnScroll';
-import ScrollViewMVCP from './FlatListMVCP';
+
+import BidirectionalFlatList from 'react-native-bidirectional-flatlist';
 /* -------------------------------------------------------------------------- */
 type ItemPropsType = any;
 type VirtualScrollerProps = {
@@ -60,14 +61,9 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 	const { currentItems } = useChatQuery({
 		chatManager: chatManager,
 	});
-	const { onScroll } = useLoadOnScroll({
-		chatManager: chatManager,
-	});
 
 	return (
-		<ScrollViewMVCP
-			chatManager={chatManager}
-			onScroll={onScroll}
+		<BidirectionalFlatList
 			/* -------------------------------------------------------------------------- */
 			style={{ height: '100%', width: '100%' }}
 			data={currentItems}
@@ -78,7 +74,7 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 					ItemRender={props.ItemRender}
 				/>
 			)}
-			keyExtractor={(item: ChatItem) => item.key}
+			keyExtractor={(item) => item.key}
 		/>
 	);
 }

@@ -21,7 +21,7 @@ export function useLoadOnScroll({ chatManager }: Props) {
 
 			/* -------------------------- check if should load -------------------------- */
 
-			await chatManager.maybeLoad();
+			//await chatManager.maybeLoad();
 			isPending.current = false;
 		}, 1000),
 		[chatManager]

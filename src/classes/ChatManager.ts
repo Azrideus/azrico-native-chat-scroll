@@ -1,8 +1,9 @@
 import { ChatItem, ItemData } from './ChatItem';
 
 //items we load in each batch
-const MAX_LOAD = 30;
-const BATCH_SIZE = 10;
+export const BATCH_SIZE = 10;
+const CLEAN_EXTRA_SIZE = 10;
+const MAX_LOAD = BATCH_SIZE + CLEAN_EXTRA_SIZE + 30;
 
 export enum LoadDirection {
 	DOWN = -1,
@@ -38,7 +39,8 @@ export class ChatManager {
 	/* -------------------------------------------------------------------------- */
 
 	//we update scroll positions relative to this item to prevent the scroll from jumping
-	private referenceItem: ChatItem | undefined;
+
+	private references: Partial<{ item: ChatItem; top: number; bottom: number }> = {};
 
 	/* -------------------------------------------------------------------------- */
 	#lastLoadDirection: LoadDirection = LoadDirection.NONE;
@@ -204,12 +206,20 @@ export class ChatManager {
 		return 0;
 	}
 
-	public async maybeLoad() {
-		console.log('maybeLoad');
+	public async maybeLoad(checkDir = LoadDirection.NONE) {
 		let loadDir = LoadDirection.NONE;
-		if (this.shouldLoadTop) loadDir = LoadDirection.UP;
-		else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
-		else return;
+		if (checkDir != LoadDirection.NONE) {
+			/* --------------------- use checkDir to verify loadDir --------------------- */
+			if (checkDir === LoadDirection.UP && !this.isAtVeryTop) loadDir = checkDir;
+			else if (checkDir === LoadDirection.DOWN && !this.veryBottomMessageVisible)
+				loadDir = checkDir;
+		} else {
+			/* ------------------------- auto determine loaddir ------------------------- */
+			if (this.shouldLoadTop) loadDir = LoadDirection.UP;
+			else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
+		}
+
+		if (loadDir == LoadDirection.NONE) return false;
 		return await this.fetch_items(loadDir);
 	}
 	/**
@@ -219,7 +229,9 @@ export class ChatManager {
 	public async fetch_items(direction: LoadDirection = LoadDirection.UP) {
 		if (this.currentLoadOperation != null) await this.currentLoadOperation;
 		this.currentLoadOperation = this.fetch_items_inner(direction);
-		return await this.currentLoadOperation;
+		const opres = await this.currentLoadOperation;
+		this.currentLoadOperation = null;
+		return opres;
 	}
 
 	private async fetch_items_inner(direction: LoadDirection = LoadDirection.UP) {
@@ -295,7 +307,6 @@ export class ChatManager {
 	 * @returns
 	 */
 	private async _setItems(items: ChatItem[]): Promise<number> {
- 
 		this.currentItems = this.cleanExtraItems(items);
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
@@ -317,7 +328,7 @@ export class ChatManager {
 	 */
 	private cleanExtraItems(inputItems: ChatItem[]): ChatItem[] {
 		if (inputItems.length <= MAX_LOAD) return inputItems;
-		let countToRemove = Math.abs(MAX_LOAD - inputItems.length + 10);
+		let countToRemove = Math.abs(MAX_LOAD - inputItems.length + CLEAN_EXTRA_SIZE);
 
 		let dirToRemove = LoadDirection.NONE;
 
@@ -347,16 +358,18 @@ export class ChatManager {
 	 * we do this to make sure our reference item doesnt get unloaded
 	 */
 	public update_reference(baseData?: ChatItem[]) {
-		if (!baseData) baseData = this.currentItems;
+		if (!Array.isArray(baseData) || baseData.length===0) baseData = this.currentItems;
+
+		this.references = { bottom: this.distanceToBottom, top: this.distanceToTop };
 
 		if (baseData.length > 0) {
 			if (this.lastLoadDirection === LoadDirection.UP) {
-				this.referenceItem = baseData[0];
+				this.references.item = baseData[0];
 			} else if (this.lastLoadDirection === LoadDirection.DOWN) {
-				this.referenceItem = baseData[baseData.length - 1];
+				this.references.item = baseData[baseData.length - 1];
 			}
 		}
-		this.referenceItem?.savePosition();
+		this.references.item?.savePosition();
 	}
 
 	private after_update() {
@@ -451,8 +464,11 @@ export class ChatManager {
 
 	/* --------------------------------- getters -------------------------------- */
 
+	get isPending() {
+		return this.currentLoadOperation != null;
+	}
 	get isSticky() {
-		return this.distanceToBottom < 100;
+		return this.distanceToBottom < 200;
 	}
 	get isCloseToTop() {
 		return this.distanceToTop < this.loadBufferDistance;
@@ -468,11 +484,27 @@ export class ChatManager {
 		return this.isCloseToBottom && !this.veryBottomMessageVisible;
 	}
 	/* ----------------------------------- ref ---------------------------------- */
-	get referenceTop(): number {
-		return this.referenceItem?.topDistance ?? Number.NaN;
+	get jumpTop(): number {
+		return this.distanceToTop - this.referenceLastDistanceTop;
 	}
-	get referenceLastTop(): number {
-		return this.referenceItem?.lastTop ?? Number.NaN;
+	get jumpBottom(): number {
+		return this.distanceToBottom - this.referenceLastDistanceBottom;
+	}
+	get jumpItem(): number {
+		return this.referenceItemCurrentTop - this.referenceItemLastTop;
+	}
+
+	get referenceLastDistanceTop(): number {
+		return this.references.top ?? Number.NaN;
+	}
+	get referenceLastDistanceBottom(): number {
+		return this.references.bottom ?? Number.NaN;
+	}
+	get referenceItemCurrentTop(): number {
+		return this.references.item?.topDistance ?? Number.NaN;
+	}
+	get referenceItemLastTop(): number {
+		return this.references.item?.lastTop ?? Number.NaN;
 	}
 	/* -------------------------------------------------------------------------- */
 	get lastLoadDirection(): LoadDirection {
