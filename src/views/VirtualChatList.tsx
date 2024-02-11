@@ -88,8 +88,7 @@ type RowRenderProps = {
 	itemProps?: ItemPropsType;
 	ItemRender: React.ElementType<ItemRenderProps>;
 };
-
-export const RowRender: React.FC<RowRenderProps> = (props: RowRenderProps) => {
+const RowRender = React.memo((props: RowRenderProps) => {
 	const itemref = React.useRef<any>();
 	const [updateKey, forceUpdate] = useForceUpdate();
 
@@ -110,7 +109,9 @@ export const RowRender: React.FC<RowRenderProps> = (props: RowRenderProps) => {
 			/>
 		</View>
 	);
-};
+});
+	
+ 
 export type ItemRenderProps = {
 	chatitem: ChatItem;
 	item: ItemData;

@@ -205,7 +205,7 @@ export class ChatManager {
 	}
 
 	public async maybeLoad() {
-			console.log('maybeLoad');
+		console.log('maybeLoad');
 		let loadDir = LoadDirection.NONE;
 		if (this.shouldLoadTop) loadDir = LoadDirection.UP;
 		else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
@@ -239,7 +239,7 @@ export class ChatManager {
 		}
 
 		search_query.exclude = Object.keys(this.itemsIndexMap);
- 
+
 		const loaded_items = await this.loadFunction(search_query);
 		this.#lastDBLoad = loaded_items.length;
 
@@ -273,8 +273,6 @@ export class ChatManager {
 		direction: LoadDirection = LoadDirection.UP,
 		isFromDB: boolean = true
 	): Promise<number> {
-		
-		
 		this.#lastLoadDirection = direction;
 		this.#lastOperation =
 			direction === LoadDirection.UP ? ChangeOperation.ADD_UP : ChangeOperation.ADD_DOWN;
@@ -297,12 +295,11 @@ export class ChatManager {
 	 * @returns
 	 */
 	private async _setItems(items: ChatItem[]): Promise<number> {
-		
+ 
 		this.currentItems = this.cleanExtraItems(items);
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
 		this.after_update();
-		this.update_reference();
 
 		this.group_log(
 			'setItems',
@@ -330,7 +327,7 @@ export class ChatManager {
 			dirToRemove = LoadDirection.UP;
 		}
 
-		countToRemove = Math.min((countToRemove), inputItems.length);
+		countToRemove = Math.min(countToRemove, inputItems.length);
 		if (countToRemove === 0 || dirToRemove === LoadDirection.NONE) return inputItems;
 
 		let resultItems = [...inputItems];
@@ -349,11 +346,15 @@ export class ChatManager {
 	 * set reference to an item that is in view.
 	 * we do this to make sure our reference item doesnt get unloaded
 	 */
-	private update_reference() {
-		if (this.lastLoadDirection === LoadDirection.UP) {
-			this.referenceItem = this.topMessage;
-		} else if (this.lastLoadDirection === LoadDirection.DOWN) {
-			this.referenceItem = this.bottomMessage;
+	public update_reference(baseData?: ChatItem[]) {
+		if (!baseData) baseData = this.currentItems;
+
+		if (baseData.length > 0) {
+			if (this.lastLoadDirection === LoadDirection.UP) {
+				this.referenceItem = baseData[0];
+			} else if (this.lastLoadDirection === LoadDirection.DOWN) {
+				this.referenceItem = baseData[baseData.length - 1];
+			}
 		}
 		this.referenceItem?.savePosition();
 	}

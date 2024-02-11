@@ -20,16 +20,57 @@ type FlatListMVCPProps = Modify<
  */
 export function ScrollViewMVCP(props: FlatListMVCPProps) {
 	const { chatManager, ...restprops } = props;
-	const listRef = React.useRef<FlatList>();
 
-	const [useData, set_useData] = React.useRef([]);
+	const listRef = React.useRef<FlatList>();
+	const lastOffset = React.useRef<number>(0);
+	const lastHeight = React.useRef<number>(0);
+	const stickToBottom = React.useRef<string>('');
+
+	const [useData, set_useData] = React.useState<ChatItem[]>([]);
+
+	React.useLayoutEffect(() => {
+		if (useData.length === 0) {
+			stickToBottom.current = 'first';
+		} else if (chatManager.isSticky) {
+			stickToBottom.current = 'animated';
+		}
+
+		chatManager.update_reference(useData);
+		set_useData(props.data);
+	}, [props.data]);
+
+	async function onContentSizeChange(h, w) {
+		console.log('onContentSizeChange');
+		setTimeout(() => {
+			if (stickToBottom.current) {
+				switch (stickToBottom.current) {
+					case 'animated':
+						listRef.current?.scrollToEnd({
+							animated: true,
+						});
+						break;
+
+					case 'first':
+						listRef.current?.scrollToOffset({
+							animated: false,
+							offset: h,
+						});
+						break;
+				}
+				stickToBottom.current = '';
+				return;
+			}
+			const jumpDistance = chatManager.referenceTop - chatManager.referenceLastTop;
+			const newOffset = lastOffset.current + jumpDistance;
+			// console.log('referenceTop:', chatManager.referenceTop);
+			// console.log('referenceLastTop:', chatManager.referenceLastTop);
+			// console.log('lastOffset:', lastOffset.current);
+			// console.log('jumpDistance:', jumpDistance);
+			listRef.current?.scrollToOffset({ animated: false, offset: newOffset });
+		}, 100);
+	}
 
 	/* -------------------------------------------------------------------------- */
-	const firstLoad = React.useRef<boolean>(true);
-
-	const lastOffset = React.useRef<number>(0);
-
-	const currentContentHeight = React.useRef<number>(0);
 
 	async function onScroll(e: any) {
 		/* ---------------------------- update distances ---------------------------- */
@@ -42,66 +83,20 @@ export function ScrollViewMVCP(props: FlatListMVCPProps) {
 			contentSize.height - (layoutMeasurement.height + contentOffset.y);
 		chatManager.distanceToTop = contentOffset.y;
 
-		if (props.onScroll) props.onScroll(e);
+		// if (props.onScroll) props.onScroll(e);
 	}
-	const onContentSizeChange = (h, w) => {
-		currentContentHeight.current = h;
-	};
+
 	/* -------------------------------------------------------------------------- */
 	/*            prevent the scroller from jumping when you add items            */
 	/* -------------------------------------------------------------------------- */
-	React.useLayoutEffect(() => {
-		if (chatManager.lastOperation === ChangeOperation.NONE) return;
-
-		console.log('data changed.', chatManager.referenceTop, props.data);
-
-		/* ------------------------ first load, stickToBottom ----------------------- */
-		if (chatManager.lastDBLoad > 0 && firstLoad.current) {
-			firstLoad.current = false;
-			return stickToBottom(false);
-		}
-		return;
-
-		/* ------------------- reference is not set, stickToBottom ------------------ */
-		if (
-			!Array.isArray(props.data) ||
-			props.data.length === 0 ||
-			Number.isNaN(chatManager.referenceLastTop)
-		) {
-			return stickToBottom(false);
-		}
-		/* ---------------------------- sticky to bottom ---------------------------- */
-		if (chatManager.isSticky) {
-			return stickToBottom(false);
-		}
-
-		/* --------------------- keep same distance to reference -------------------- */
-		// if (distanceToTop.current) {
-		// 	listRef.current?.scrollToOffset({ animated: false, offset: distanceToTop.current });
-		// }
-		console.log('lastTop:', chatManager.referenceLastTop);
-		console.log('referenceTop:', chatManager.referenceTop);
-		const jumpDistance = chatManager.referenceTop - chatManager.referenceLastTop;
-		const newOffset = lastOffset.current + jumpDistance;
-
-		console.log('jumpDistance:', jumpDistance);
-		listRef.current?.scrollToOffset({ animated: false, offset: newOffset });
-	}, [props.data]);
-
-	function stickToBottom(smooth = true) {
-		listRef.current?.scrollToOffset({ offset: 9999 });
-		//setTimeout(() => {
-		//	listRef.current?.scrollToEnd({ animated: smooth });
-		//}, 100);
-	}
 
 	return (
 		<FlatList
 			{...restprops}
 			scrollEventThrottle={300}
-			data={props.data}
-			onContentSizeChange={onContentSizeChange}
 			onScroll={onScroll}
+			onContentSizeChange={onContentSizeChange}
+			data={useData}
 			ref={listRef as any}
 			maintainVisibleContentPosition={undefined}
 		/>

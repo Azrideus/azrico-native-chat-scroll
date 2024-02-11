@@ -88,7 +88,7 @@ export function DemoChatScroll() {
 					}}
 				>
 					<VirtualChatList
-						debug={true}
+						debug={false}
 						managerRef={managerRef as any}
 						ItemRender={ItemRender}
 						BottomContent={BottomContent}
@@ -174,12 +174,15 @@ function ItemRender(props: any) {
 						alignItems: 'center',
 					}}
 				>
-					{needProfile && (
-						<>
-							<img src={item['Avatar URL']} style={{ height: 32, width: 32 }}></img>
-							<b>{item._creator}</b>
-						</>
-					)}
+					<div style={{ height: 32 }}>
+						{needProfile && (
+							<>
+								<img src={item['Avatar URL']} style={{ height: 32, width: 32 }}></img>
+								<b>{item._creator}</b>
+							</>
+						)}
+					</div>
+
 					<button onClick={() => chatitem.Delete()}>delete</button>
 					<button
 						onClick={() => {

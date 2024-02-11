@@ -55,7 +55,9 @@ export class ChatItem {
 	}
 
 	get topDistance() {
-		return this.itemref?.current?.getBoundingClientRect().top ?? 0;
+		const itemref = this.itemref?.current;
+		if (!itemref) return Number.NaN;
+		return itemref.getBoundingClientRect().top ?? Number.NaN;
 	}
 	get lastTop() {
 		return this.__options['lasttop'] ?? Number.NaN;
