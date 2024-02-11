@@ -3,13 +3,13 @@ import VirtualChatList, {
 	ChatItem,
 	ChatManager,
 	TestChatLoader,
-} from '@azrideus/react-chat-scroll';
+} from '../index';
 
 /* ------------------------------ initial chats ----------------------------- */
 import examplechats from './examplechats.json';
 examplechats.forEach(TestChatLoader.addExampleChat);
 
-export function Examplechatscroll() {
+export function DemoChatScroll() {
 	const [message, set_message] = React.useState('');
 	const managerRef = React.useRef<ChatManager>();
 	const timerRef = React.useRef<any>();
@@ -197,4 +197,4 @@ function LoadingArea() {
 function BottomContent() {
 	return <div>End of chat</div>;
 }
-export default Examplechatscroll;
+export default DemoChatScroll;

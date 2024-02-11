@@ -7,6 +7,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 
 type Props = {
 	chatManager: ChatManager;
+	queryKey: string;
 };
 
 /**
@@ -14,7 +15,7 @@ type Props = {
  * @param props
  * @returns currently active `ChatItem` array on the `chatManager`
  */
-export function useChatQuery({ chatManager }: Props) {
+export function useChatQuery({ chatManager, queryKey }: Props) {
 	const [currentItems, set_currentItems] = React.useState<ChatItem[]>([]);
 	const [updateKey, forceUpdate] = useForceUpdate();
 
@@ -27,23 +28,25 @@ export function useChatQuery({ chatManager }: Props) {
 		isFetchingNextPage,
 		isFetchingPreviousPage,
 	} = useInfiniteQuery({
-		queryKey: ['queryKey'],
+		queryKey: [queryKey],
 		queryFn: fetchData,
-		initialPageParam: 1,
+		initialPageParam: 0,
 		getNextPageParam: (lastPage, allPages) => 1,
 		getPreviousPageParam: (firstPage, allPages) => 1,
 	});
-	
-	
+
 	/* ------------------------------ initial setup ----------------------------- */
-	const loadMoreOlderMessages = async () => {};
+	const loadMoreOlderMessages = async () => {
+	console.log('loadMoreOlderMessages');
+	};
 
-	const loadMoreRecentMessages = async () => {};
+	const loadMoreRecentMessages = async () => {
+	console.log('loadMoreRecentMessages');
+	};
 
-	
 	function fetchData({ pageParam = 0 }): ChatItem[] {
 		// props.loadFunction({ page: pageParam, })
-		console.log('fetchpage:', pageParam);
+		chatManager.fetch_page(pageParam);
 		// return await fetch(`.../?page=${pageParam}`).then((res) => res.json()); //Should be of type Page
 		return [];
 	}

@@ -37,20 +37,14 @@ export class ChatManager {
 	static WRAPPER_BUFFER_HEIGHT = ChatManager.WRAPPER_HEIGHT + 200;
 	public show_logs = false;
 
- 
-
 	#currentItems: ChatItem[] = [];
 	private itemsIndexMap: { [key: string]: number } = {};
 
 	private isLastLoadFromDB: boolean = true;
 
-	
-
-	#lastLoadDirection: LoadDirection = LoadDirection.NONE;
 	#lastOperation: ChangeOperation = ChangeOperation.NONE;
 	#lastCountChange: number = 0;
 	#lastDBLoad: number = 0;
- 
 
 	private setItemsFunction?: SetItemsFunctionType;
 
@@ -189,16 +183,13 @@ export class ChatManager {
 
 		if (newMessagesToAdd.length === 0) return 0;
 		if (this.veryBottomMessageVisible) {
-			const addCount = await this._addItems(newMessagesToAdd, LoadDirection.DOWN, false);
+			const addCount = await this._addItems(newMessagesToAdd, false);
 			//if a new message is added the bottom message must change
 			this.updateBottomMessage();
 			return addCount;
 		}
 		return 0;
 	}
-
- 
- 
 
 	/* -------------------------------------------------------------------------- */
 	/*                              private functions                             */
@@ -208,32 +199,28 @@ export class ChatManager {
 	 * load more items in the given direction
 	 * @param direction
 	 */
-	public async fetch_items(direction: LoadDirection = LoadDirection.UP) { 
+	public async fetch_page(pagenum) {
 		if (!this.loadFunction) return;
 
+		/* -------------------------------------------------------------------------- */
+		/*                           setup the search_query                           */
+		/* -------------------------------------------------------------------------- */
 		const search_query: SearchQuery = {
 			limit: BATCH_SIZE,
 		};
 
-		if (direction == LoadDirection.DOWN) {
-			search_query.sort = { _created_date: 1 };
-			if (this.bottomMessage?._created_date)
-				search_query._created_date = { $gte: this.bottomMessage?._created_date };
-		} else {
-			search_query.sort = { _created_date: -1 };
-			if (this.topMessage?._created_date)
-				search_query._created_date = { $lte: this.topMessage?._created_date };
-		}
-		search_query.exclude = this.currentItems.map((r) => r._id); 
-		this.#lastLoadDirection = direction; 
+		search_query.sort = { _created_date: 1 };
+		if (this.bottomMessage?._created_date)
+			search_query._created_date = { $gte: this.bottomMessage?._created_date };
+
+		search_query.exclude = this.currentItems.map((r) => r._id);
 
 		const loaded_items = await this.loadFunction(search_query);
 		this.log(
 			'load_items',
 			`• search_query: `,
 			search_query,
-			`• loaded_items: ${loaded_items.length}`,
-			`• direction: ${direction}`
+			`• loaded_items: ${loaded_items.length}`
 		);
 		//
 		this.#lastDBLoad = loaded_items.length;
@@ -243,7 +230,7 @@ export class ChatManager {
 			.map((r, i) => new ChatItem(this, r))
 			/* ----------------------------- sort the items ----------------------------- */
 			.sort(ChatManager.item_sort);
-		await this._addItems(final_chats, direction, true);
+		await this._addItems(final_chats, true);
 	}
 
 	/**
@@ -255,21 +242,14 @@ export class ChatManager {
 	 */
 	private async _addItems(
 		items_to_add: ChatItem[],
-		direction: LoadDirection = LoadDirection.UP,
 		isFromDB: boolean = true
 	): Promise<number> {
-		this.#lastOperation =
-			direction === LoadDirection.UP ? ChangeOperation.ADD_UP : ChangeOperation.ADD_DOWN;
 		this.isLastLoadFromDB = isFromDB;
 
 		const resultItems = [...this.currentItems];
-		if (direction === LoadDirection.UP) {
-			//add above the list
-			resultItems.unshift(...items_to_add);
-		} else {
-			//add below the list
-			resultItems.push(...items_to_add);
-		}
+		//add below the list
+		resultItems.push(...items_to_add);
+		/* -------------------------------------------------------------------------- */
 		await this._setItems(resultItems);
 		return items_to_add.length;
 	}
@@ -280,11 +260,10 @@ export class ChatManager {
 	 * @returns
 	 */
 	private async _setItems(items: ChatItem[]): Promise<number> {
- 
 		this.currentItems = items;
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
-		this.after_update(); 
+		this.after_update();
 		this.log(
 			'setItems',
 			`• search_query: `,
@@ -294,12 +273,9 @@ export class ChatManager {
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
 		return this.currentItems.length;
 	}
- 
 
-	 
 	private after_update() {
 		this.buildIndexMap();
-		this.check_position();
 		this.update_next_prev_items();
 	}
 	/**
@@ -325,41 +301,6 @@ export class ChatManager {
 		}
 	}
 
-	/**
-	 * check if we reached the bottom or top of the list
-	 */
-	private check_position() {
-		if (!this.isLastLoadFromDB) {
-			this.updateBottomMessage();
-			return;
-		}
-		/* -------------------------------------------------------------------------- */
-		/*                          Loading Something from DB                         */
-		/* -------------------------------------------------------------------------- */
-		if (!this.id_veryBottomMessage) {
-			//if bottom message is not set yet (first load), set it to the current bottom item
-			//if the bottom message id is -1 this will not run !
-			this.updateBottomMessage();
-		}
-
-		/* ---------------- loading less than limit means end of chat --------------- */
-		//we load less items than limit -> we have reached the top/bottom of the chat
-		if (this.#lastDBLoad < BATCH_SIZE) {
-			//console.log('loaded less items than expected. updating max/min');
-			if (this.lastLoadDirection === LoadDirection.DOWN) this.updateBottomMessage();
-			else if (this.lastLoadDirection === LoadDirection.UP)
-				this.id_veryTopMessage = this.topMessage?._id;
-		} else {
-			// clear top/bot if we are in middle of the list
-			// so we can correctly detect new messages that are added below the veryBottomMessage
-			if (this.id_veryBottomMessage != this.bottomMessage?._id) {
-				this.id_veryBottomMessage = -1;
-			}
-			if (this.id_veryTopMessage != this.topMessage?._id) {
-				this.id_veryTopMessage = -1;
-			}
-		}
-	}
 	private updateBottomMessage() {
 		this.id_veryBottomMessage = this.bottomMessage?._id;
 	}
@@ -398,8 +339,6 @@ export class ChatManager {
 		return this.currentItems[this.currentItems.length - 1];
 	}
 
-	 
-
 	/* we are at the very top. we cant go up anymore */
 	get isAtVeryTop() {
 		if (
@@ -418,9 +357,6 @@ export class ChatManager {
 		);
 	}
 
- 
- 
-
 	/* number of changed items in the last load */
 	get itemCount() {
 		return this.currentItems.length;
@@ -430,9 +366,6 @@ export class ChatManager {
 	}
 	get lastDBLoad() {
 		return this.#lastDBLoad;
-	}
-	get lastLoadDirection(): LoadDirection {
-		return this.#lastLoadDirection;
 	}
 
 	get lastOperation(): ChangeOperation {

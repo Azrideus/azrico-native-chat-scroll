@@ -13,13 +13,12 @@ const {
 // const rewireReactHotLoader = require("react-app-rewire-hot-loader");
 
 module.exports = (config, env) => {
+	config.resolve.symlinks = true; // Enable symlinks resolution
 	/* -------------------------------------------------------------------------- */
 	let rootdir = path.resolve('..');
 	if (!path.dirname(rootdir).startsWith('react-chat-scroll')) {
 		rootdir = path.resolve('../..');
 	}
-
- 
 
 	config = Object.assign(
 		// rewireReactHotLoader(config),

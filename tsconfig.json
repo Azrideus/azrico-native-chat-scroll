@@ -1,8 +1,12 @@
 {
 	"compilerOptions": {
 		"outDir": "./dist",
-		"rootDir": "."
+		"rootDir": ".",
+		"paths": {
+			"@azrideus/react-chat-scroll": ["./src/index"]
+		}
 	},
+
 	"extends": "./config/tsconfig.json",
 	"exclude": [
 		"node_modules",

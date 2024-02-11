@@ -37,7 +37,19 @@ const queryClient = new QueryClient();
  * @param props
  */
 export function VirtualChatList(props: VirtualScrollerProps) {
-	const queryKey = React.useMemo(() => UIDHelper.nextid(), []);
+	return (
+		<QueryClientProvider client={queryClient}>
+			<VirtualChatListInner {...props} />
+		</QueryClientProvider>
+	);
+}
+/**
+ * Advanced Virtual scrolling
+ * use the debug prop to enable logs
+ * @param props
+ */
+function VirtualChatListInner(props: VirtualScrollerProps) {
+	const queryKey = React.useMemo(() => String(UIDHelper.nextid()), []);
 	const chatManager = useChatManager({
 		managerRef: props.managerRef,
 		loadFunction: props.loadFunction,
@@ -45,29 +57,28 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	});
 
 	const { currentItems, loadMoreOlderMessages, loadMoreRecentMessages } = useChatQuery({
+		queryKey: queryKey,
 		chatManager: chatManager,
 	});
 
 	return (
-		<QueryClientProvider client={queryClient}>
-			<FlatList
-				inverted
-				enableAutoscrollToTop={true} // optional | default - false
-				data={currentItems}
-				renderItem={MessageBubble as any}
-				keyExtractor={(item: ChatItem) => item.key}
-				/* -------------------------------------------------------------------------- */
-				onStartReached={loadMoreOlderMessages}
-				onEndReached={loadMoreRecentMessages}
-				/* -------------------------------------------------------------------------- */
-				showDefaultLoadingIndicators={true} // optional
-				onStartReachedThreshold={10} // optional
-				onEndReachedThreshold={10} // optional
-				activityIndicatorColor={'black'} // optional
+		<FlatList
+			inverted
+			enableAutoscrollToTop={true} // optional | default - false
+			data={currentItems}
+			renderItem={MessageBubble as any}
+			keyExtractor={(item: ChatItem) => item.key}
+			/* -------------------------------------------------------------------------- */
+			onStartReached={loadMoreOlderMessages}
+			onEndReached={loadMoreRecentMessages}
+			/* -------------------------------------------------------------------------- */
+			showDefaultLoadingIndicators={true} // optional
+			onStartReachedThreshold={10} // optional
+			onEndReachedThreshold={10} // optional
+			activityIndicatorColor={'black'} // optional
 
-				// You can use any other prop on react-native's FlatList
-			/>
-		</QueryClientProvider>
+			// You can use any other prop on react-native's FlatList
+		/>
 	);
 }
 type Props = {
