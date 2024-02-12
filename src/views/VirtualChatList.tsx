@@ -5,16 +5,13 @@ import ChatManager, {
 	LoadFunctionType, 
 } from '../classes/ChatManager';
 import { useChatManager } from '../hooks/useChatManager';
-import {
-	QueryClient,
-	QueryClientProvider, 
-} from '@tanstack/react-query';
+ 
 import { View } from 'react-native';
-
+import BidirectionalFlatlist from 'react-native-bidirectional-flatlist';
 import { useChatQuery } from '../hooks';
-import { useLoadOnScroll } from '../hooks/useLoadOnScroll';
+import { useChatScroll } from '../hooks/useChatScroll';
+import { Virtuoso } from 'react-virtuoso';
 
-import BidirectionalFlatList from 'react-native-bidirectional-flatlist';
 /* -------------------------------------------------------------------------- */
 type ItemPropsType = any;
 type VirtualScrollerProps = {
@@ -39,12 +36,7 @@ type VirtualScrollerProps = {
  * @param props
  */
 export function VirtualChatList(props: VirtualScrollerProps) {
-	const [queryClient] = React.useState(new QueryClient());
-	return (
-		<QueryClientProvider client={queryClient}>
-			<VirtualChatListInner {...props} />
-		</QueryClientProvider>
-	);
+	return <VirtualChatListInner {...props} />;
 }
 
 /**
@@ -53,28 +45,38 @@ export function VirtualChatList(props: VirtualScrollerProps) {
  * @param props
  */
 function VirtualChatListInner(props: VirtualScrollerProps) {
+	const listRef = React.useRef<any>();
 	const chatManager = useChatManager({
 		managerRef: props.managerRef,
 		loadFunction: props.loadFunction,
 		debug: props.debug,
 	});
-	const { currentItems } = useChatQuery({
+	const {
+		currentItems,
+		startReached,
+		endReached,
+		initialTopMostItemIndex,
+		firstItemIndex,
+	} = useChatQuery({
 		chatManager: chatManager,
 	});
-
 	return (
-		<BidirectionalFlatList
-			/* -------------------------------------------------------------------------- */
+		<Virtuoso
 			style={{ height: '100%', width: '100%' }}
+			firstItemIndex={firstItemIndex}
+			initialTopMostItemIndex={initialTopMostItemIndex}
 			data={currentItems}
-			renderItem={({ item }) => (
-				<RowRender
-					item={item}
-					itemProps={props.itemProps}
-					ItemRender={props.ItemRender}
-				/>
-			)}
-			keyExtractor={(item) => item.key}
+			startReached={startReached}
+			endReached={endReached}
+			itemContent={(index, item) => {
+				return (
+					<RowRender
+						item={item}
+						itemProps={props.itemProps}
+						ItemRender={props.ItemRender}
+					/>
+				);
+			}}
 		/>
 	);
 }

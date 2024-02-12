@@ -84,7 +84,9 @@ export class ChatItem {
 		let controlObject = inp;
 		if (controlObject)
 			try {
-				return new Date(controlObject._created_date ?? controlObject.date);
+				return new Date(
+					controlObject['_created_date'] ?? controlObject['date'] ?? controlObject['Date']
+				);
 			} catch {}
 		return new Date();
 	}

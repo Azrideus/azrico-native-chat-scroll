@@ -41,9 +41,9 @@ export class TestChatLoader {
 				if (_created_date) {
 					if (_created_date.$gte instanceof Date) {
 						const dtTime = _created_date.$gte.getTime();
-						searchedItems = searchedItems.filter(
-							(s) => ChatItem.getObjectDate(s).getTime() >= dtTime
-						);
+						searchedItems = searchedItems.filter((s) => {
+							return ChatItem.getObjectDate(s).getTime() >= dtTime;
+						});
 					}
 					if (_created_date.$lte instanceof Date) {
 						const dtTime = _created_date.$lte.getTime();
@@ -52,6 +52,7 @@ export class TestChatLoader {
 						);
 					}
 				}
+			
 				if (Array.isArray(exclude)) {
 					searchedItems = searchedItems.filter((s) => !exclude.includes(s._id));
 				}

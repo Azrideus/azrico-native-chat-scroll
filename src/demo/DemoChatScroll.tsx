@@ -28,7 +28,7 @@ export function DemoChatScroll() {
 				text: 'spam: ' + TestChatLoader.getExampleChatLenght(),
 				date: new Date(),
 			};
-			//await addNewMsg(newMsg);
+			//await addNewMsg(newMsg, LoadDirection.UP);
 		}
 
 		if (timerRef.current) clearTimeout(timerRef.current);
@@ -88,7 +88,7 @@ export function DemoChatScroll() {
 					}}
 				>
 					<VirtualChatList
-						debug={false}
+						debug={true}
 						managerRef={managerRef as any}
 						ItemRender={ItemRender}
 						BottomContent={BottomContent}

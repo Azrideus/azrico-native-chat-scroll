@@ -1,9 +1,6 @@
 import { ChatItem, ItemData } from './ChatItem';
 
-//items we load in each batch
-export const BATCH_SIZE = 10;
-const CLEAN_EXTRA_SIZE = 10;
-const MAX_LOAD = BATCH_SIZE + CLEAN_EXTRA_SIZE + 30;
+
 
 export enum LoadDirection {
 	DOWN = -1,
@@ -32,6 +29,11 @@ type SetItemsFunctionType = (items: ChatItem[]) => any;
 type MessageSearchParams = ChatItem | ItemData | string | number;
 
 export class ChatManager {
+	//items we load in each batch
+	static BATCH_SIZE = 10;
+	static CLEAN_EXTRA_SIZE = 10;
+	static MAX_LOAD = ChatManager.BATCH_SIZE + ChatManager.CLEAN_EXTRA_SIZE + 30;
+
 	public show_logs = false;
 	public distanceToTop: number = 0;
 	public distanceToBottom: number = 0;
@@ -210,13 +212,13 @@ export class ChatManager {
 		let loadDir = LoadDirection.NONE;
 		if (checkDir != LoadDirection.NONE) {
 			/* --------------------- use checkDir to verify loadDir --------------------- */
-			if (checkDir === LoadDirection.UP && !this.isAtVeryTop) loadDir = checkDir;
-			else if (checkDir === LoadDirection.DOWN && !this.veryBottomMessageVisible)
+			if (checkDir === LoadDirection.DOWN && !this.veryBottomMessageVisible)
 				loadDir = checkDir;
+			else if (checkDir === LoadDirection.UP && !this.isAtVeryTop) loadDir = checkDir;
 		} else {
 			/* ------------------------- auto determine loaddir ------------------------- */
-			if (this.shouldLoadTop) loadDir = LoadDirection.UP;
-			else if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
+			if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
+			else if (this.shouldLoadTop) loadDir = LoadDirection.UP;
 		}
 
 		if (loadDir == LoadDirection.NONE) return false;
@@ -237,9 +239,9 @@ export class ChatManager {
 	private async fetch_items_inner(direction: LoadDirection = LoadDirection.UP) {
 		if (!this.loadFunction) return;
 		const search_query: SearchQuery = {
-			limit: BATCH_SIZE,
+			limit: ChatManager.BATCH_SIZE,
 		};
-
+		//TODO: fix sort for loading
 		if (direction == LoadDirection.DOWN) {
 			search_query.sort = { _created_date: 1 };
 			if (this.bottomMessage?._created_date)
@@ -327,8 +329,10 @@ export class ChatManager {
 	 * clear items in the given list to match the max item count
 	 */
 	private cleanExtraItems(inputItems: ChatItem[]): ChatItem[] {
-		if (inputItems.length <= MAX_LOAD) return inputItems;
-		let countToRemove = Math.abs(MAX_LOAD - inputItems.length + CLEAN_EXTRA_SIZE);
+		if (inputItems.length <= ChatManager.MAX_LOAD) return inputItems;
+		let countToRemove = Math.abs(
+			ChatManager.MAX_LOAD - inputItems.length + ChatManager.CLEAN_EXTRA_SIZE
+		);
 
 		let dirToRemove = LoadDirection.NONE;
 
@@ -358,7 +362,7 @@ export class ChatManager {
 	 * we do this to make sure our reference item doesnt get unloaded
 	 */
 	public update_reference(baseData?: ChatItem[]) {
-		if (!Array.isArray(baseData) || baseData.length===0) baseData = this.currentItems;
+		if (!Array.isArray(baseData) || baseData.length === 0) baseData = this.currentItems;
 
 		this.references = { bottom: this.distanceToBottom, top: this.distanceToTop };
 
@@ -423,7 +427,7 @@ export class ChatManager {
 
 		/* ---------------- loading less than limit means end of chat --------------- */
 		//we load less items than limit -> we have reached the top/bottom of the chat
-		if (this.#lastDBLoad < BATCH_SIZE) {
+		if (this.#lastDBLoad < ChatManager.BATCH_SIZE) {
 			//console.log('loaded less items than expected. updating max/min');
 			if (this.lastLoadDirection === LoadDirection.DOWN) this.updateBottomMessage();
 			else if (this.lastLoadDirection === LoadDirection.UP)
