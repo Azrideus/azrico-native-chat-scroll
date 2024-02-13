@@ -20,27 +20,26 @@ export function useChatQuery({ chatManager }: Props) {
 	const [currentItems, set_currentItems] = React.useState<ChatItem[]>([]);
 
 	const [firstItemIndex, set_firstItemIndex] = React.useState(MID_MAX);
-	const [initialTopMostItemIndex, set_initialTopMostItemIndex] = React.useState(
-		ChatManager.BATCH_SIZE
-	);
+	const [initialTopMostItemIndex, set_initialTopMostItemIndex] = React.useState(MID_MAX);
 
 	function setItems(items: ChatItem[]) {
 		let delta = chatManager.lastCountChange;
-		if (chatManager.lastLoadDirection === LoadDirection.DOWN) delta *= -1;
+		if (chatManager.lastLoadDirection === LoadDirection.UP) delta *= 1;
 
-		const nextFirstItemIndex = MID_MAX - items.length;
-		const nextFirstItemIndex2 = firstItemIndex + delta;
 		console.log(`items.length`, items.length);
 		console.log(`delta`, delta);
-		console.log(nextFirstItemIndex, nextFirstItemIndex2, delta);
+		console.log(firstItemIndex, delta);
 
-		set_firstItemIndex(nextFirstItemIndex);
+		set_firstItemIndex((s) => {
+			console.log('set_firstItemIndex:', s + delta);
+			return s + delta;
+		});
 		//
 		set_currentItems(items);
 	}
 	React.useLayoutEffect(() => {
 		chatManager.set_setItemsFunction(setItems);
-		chatManager.fetch_items(LoadDirection.DOWN).then((s) => (isReady.current = true));
+		chatManager.fetch_items(LoadDirection.UP).then((s) => (isReady.current = true));
 	}, [chatManager]);
 
 	async function startReached() {

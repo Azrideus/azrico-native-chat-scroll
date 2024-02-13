@@ -590,7 +590,10 @@ export class ChatManager {
 	 * @returns
 	 */
 	public static item_sort(a: ChatItem, b: ChatItem, sortdir = 1) {
-		let dtCmp = a._created_time - b._created_time;
+		let dtCmp = 0;
+		if (a._created_time && b._created_time) dtCmp = a._created_time - b._created_time;
+		if (dtCmp === 0 && a._created_date && b._created_date)
+			dtCmp = a._created_date.getTime() - b._created_date.getTime(); 
 		if (dtCmp === 0 && a._id && b._id) dtCmp = a._id.localeCompare(b._id);
 		if (dtCmp === 0 && a.data.text && b.data.text)
 			dtCmp = a.data.text.localeCompare(b.data.text);

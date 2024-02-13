@@ -58,7 +58,10 @@ export class TestChatLoader {
 				}
 				if (sort._created_date) {
 					const sortdir = sort._created_date;
-					searchedItems.sort((a, b) => ChatManager.item_sort(a, b, sortdir)) as any[];
+					
+					searchedItems=searchedItems.sort((a, b) =>
+						ChatManager.item_sort(a, b, sortdir)
+					) as any[];
 				}
 				//apply the skip and limit rules:
 				if (!skip) skip = 0;
@@ -92,7 +95,9 @@ export class TestChatLoader {
 			_id: newmsg['_id'] ?? `oldmsg-${UIDHelper.nextid()}`,
 			text: newmsg['text'] ?? newmsg['Content'],
 			_creator: newmsg['_creator'] ?? newmsg['user'],
-			_created_date: newmsg['_created_date'] ?? newmsg['Date'] ?? newmsg['date'],
+			_created_date: new Date(
+				newmsg['_created_date'] ?? newmsg['Date'] ?? newmsg['date']
+			),
 		});
 		return true;
 	}
