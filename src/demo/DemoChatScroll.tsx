@@ -91,9 +91,9 @@ export function DemoChatScroll() {
 						debug={true}
 						managerRef={managerRef as any}
 						ItemRender={ItemRender}
-						BottomContent={BottomContent}
-						TopContent={TopContent}
-						WrapperContent={LoadingArea}
+						BottomContent={<BottomContent />}
+						TopContent={<TopContent />}
+						WrapperContent={<LoadingArea />}
 						loadFunction={TestChatLoader.loadFunction}
 						// batchSize={30}
 					/>

@@ -7,9 +7,7 @@ import ChatManager, {
 import { useChatManager } from '../hooks/useChatManager';
  
 import { View } from 'react-native';
-import BidirectionalFlatlist from 'react-native-bidirectional-flatlist';
 import { useChatQuery } from '../hooks';
-import { useChatScroll } from '../hooks/useChatScroll';
 import { Virtuoso } from 'react-virtuoso';
 
 /* -------------------------------------------------------------------------- */
@@ -19,9 +17,10 @@ type VirtualScrollerProps = {
 	ItemRender: React.ElementType<ItemRenderProps>;
 	/* -------------------------------------------------------------------------- */
 	newItems?: ItemData[];
-	WrapperContent?: React.ElementType<any>;
-	BottomContent?: React.ElementType<any>;
-	TopContent?: React.ElementType<any>;
+	WrapperContent?: React.ReactNode;
+	BottomContent?: React.ReactNode;
+	TopContent?: React.ReactNode;
+	/* -------------------------------------------------------------------------- */
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 	className?: string;
 	itemClassName?: string;
@@ -57,17 +56,33 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 		endReached,
 		initialTopMostItemIndex,
 		firstItemIndex,
+		onScroll,
+		isAtVeryTop,
+		isAtVeryBottom,
 	} = useChatQuery({
 		chatManager: chatManager,
+		listRef: listRef,
 	});
 	return (
 		<Virtuoso
+			components={{
+				Footer: () => {
+					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;
+				},
+				Header: () => {
+					return <>{isAtVeryTop ? props.TopContent : props.WrapperContent}</>;
+				},
+			}}
+			alignToBottom
+			ref={listRef}
+			onScroll={onScroll}
 			style={{ height: '100%', width: '100%' }}
 			firstItemIndex={firstItemIndex}
 			initialTopMostItemIndex={initialTopMostItemIndex}
 			data={currentItems}
 			startReached={startReached}
 			endReached={endReached}
+			followOutput="auto"
 			itemContent={(index, item) => {
 				return (
 					<RowRender

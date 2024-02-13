@@ -7,6 +7,7 @@ import { LoadDirection } from '../classes/ChatManager';
 
 type Props = {
 	chatManager: ChatManager;
+	listRef: any;
 };
 
 const MID_MAX = Math.floor(Number.MAX_SAFE_INTEGER / 2);
@@ -15,27 +16,34 @@ const MID_MAX = Math.floor(Number.MAX_SAFE_INTEGER / 2);
  * @param props
  * @returns currently active `ChatItem` array on the `chatManager`
  */
-export function useChatQuery({ chatManager }: Props) {
+export function useChatQuery({ listRef, chatManager }: Props) {
 	const isReady = React.useRef(false);
 	const [currentItems, set_currentItems] = React.useState<ChatItem[]>([]);
 
 	const [firstItemIndex, set_firstItemIndex] = React.useState(MID_MAX);
 	const [initialTopMostItemIndex, set_initialTopMostItemIndex] = React.useState(MID_MAX);
+	const [isAtVeryTop, set_isAtVeryTop] = React.useState(false);
+	const [isAtVeryBottom, set_isAtVeryBottom] = React.useState(false);
 
 	function setItems(items: ChatItem[]) {
-		let delta = chatManager.lastCountChange;
-		if (chatManager.lastLoadDirection === LoadDirection.UP) delta *= 1;
+		let delta = 0;
+		if (chatManager.lastLoadDirection === LoadDirection.UP)
+			delta = -chatManager.lastCountChange;
+		// else if (chatManager.lastLoadDirection === LoadDirection.DOWN && chatManager.isSticky)
+		// 	delta = -chatManager.lastCountChange;
 
-		console.log(`items.length`, items.length);
-		console.log(`delta`, delta);
-		console.log(firstItemIndex, delta);
+		// console.log(`items.length`, items.length);
+		// console.log(`delta`, delta);
+		// console.log(firstItemIndex, delta);
 
 		set_firstItemIndex((s) => {
-			console.log('set_firstItemIndex:', s + delta);
+			// console.log('set_firstItemIndex:', s + delta);
 			return s + delta;
 		});
 		//
 		set_currentItems(items);
+		set_isAtVeryBottom(chatManager.isAtVeryBottom);
+		set_isAtVeryTop(chatManager.isAtVeryTop);
 	}
 	React.useLayoutEffect(() => {
 		chatManager.set_setItemsFunction(setItems);
@@ -44,14 +52,16 @@ export function useChatQuery({ chatManager }: Props) {
 
 	async function startReached() {
 		if (!isReady.current) return [];
-		console.log(`startReached`);
-		//return await chatManager.fetch_items(LoadDirection.UP);
+		// console.log(`startReached`);
+		return await chatManager.fetch_items(LoadDirection.UP);
 	}
 	async function endReached() {
 		if (!isReady.current) return [];
-		console.log(`endReached`);
-
-		//return await chatManager.fetch_items(LoadDirection.DOWN);
+		// console.log(`endReached`);
+		return await chatManager.fetch_items(LoadDirection.DOWN);
+	}
+	function onScroll(e) {
+		// console.log(`onScroll`, e, listRef);
 	}
 	return {
 		currentItems,
@@ -59,5 +69,8 @@ export function useChatQuery({ chatManager }: Props) {
 		endReached,
 		initialTopMostItemIndex,
 		firstItemIndex,
+		onScroll,
+		isAtVeryTop,
+		isAtVeryBottom,
 	};
 }

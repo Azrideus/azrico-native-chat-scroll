@@ -30,9 +30,9 @@ type MessageSearchParams = ChatItem | ItemData | string | number;
 
 export class ChatManager {
 	//items we load in each batch
-	static BATCH_SIZE = 10;
+	static BATCH_SIZE = 50;
 	static CLEAN_EXTRA_SIZE = 10;
-	static MAX_LOAD = ChatManager.BATCH_SIZE + ChatManager.CLEAN_EXTRA_SIZE + 30;
+	static MAX_LOAD = ChatManager.BATCH_SIZE + ChatManager.CLEAN_EXTRA_SIZE + 10;
 
 	public show_logs = false;
 	public distanceToTop: number = 0;
@@ -195,14 +195,14 @@ export class ChatManager {
 			['msglist', msglist.length],
 			['messagesToAdd', messagesToAdd.length],
 			['newMessagesToAdd', newMessagesToAdd.length],
-			['veryBottomMessageVisible', this.veryBottomMessageVisible]
+			['veryBottomMessageVisible', this.isAtVeryBottom]
 		);
 
 		if (newMessagesToAdd.length === 0) return 0;
-		if (this.veryBottomMessageVisible) {
+		if (this.isAtVeryBottom) {
 			const addCount = await this._addItems(newMessagesToAdd, dir, false);
 			//if a new message is added the bottom message must change
-			this.updateBottomMessage();
+			this.updateVeryBottomMessage();
 			return addCount;
 		}
 		return 0;
@@ -212,7 +212,7 @@ export class ChatManager {
 		let loadDir = LoadDirection.NONE;
 		if (checkDir != LoadDirection.NONE) {
 			/* --------------------- use checkDir to verify loadDir --------------------- */
-			if (checkDir === LoadDirection.DOWN && !this.veryBottomMessageVisible)
+			if (checkDir === LoadDirection.DOWN && !this.isAtVeryBottom)
 				loadDir = checkDir;
 			else if (checkDir === LoadDirection.UP && !this.isAtVeryTop) loadDir = checkDir;
 		} else {
@@ -241,7 +241,6 @@ export class ChatManager {
 		const search_query: SearchQuery = {
 			limit: ChatManager.BATCH_SIZE,
 		};
-		//TODO: fix sort for loading
 		if (direction == LoadDirection.DOWN) {
 			search_query.sort = { _created_date: 1 };
 			if (this.bottomMessage?._created_date)
@@ -413,7 +412,7 @@ export class ChatManager {
 	 */
 	private check_position() {
 		if (!this.isLastLoadFromDB) {
-			this.updateBottomMessage();
+			this.updateVeryBottomMessage();
 			return;
 		}
 		/* -------------------------------------------------------------------------- */
@@ -422,14 +421,14 @@ export class ChatManager {
 		if (!this.id_veryBottomMessage) {
 			//if bottom message is not set yet (first load), set it to the current bottom item
 			//if the bottom message id is -1 this will not run !
-			this.updateBottomMessage();
+			this.updateVeryBottomMessage();
 		}
 
 		/* ---------------- loading less than limit means end of chat --------------- */
 		//we load less items than limit -> we have reached the top/bottom of the chat
 		if (this.#lastDBLoad < ChatManager.BATCH_SIZE) {
 			//console.log('loaded less items than expected. updating max/min');
-			if (this.lastLoadDirection === LoadDirection.DOWN) this.updateBottomMessage();
+			if (this.lastLoadDirection === LoadDirection.DOWN) this.updateVeryBottomMessage();
 			else if (this.lastLoadDirection === LoadDirection.UP)
 				this.id_veryTopMessage = this.topMessage?._id;
 		} else {
@@ -443,7 +442,12 @@ export class ChatManager {
 			}
 		}
 	}
-	private updateBottomMessage() {
+
+	/**
+	 * update id of the very bottom message
+	 * no message below this message exists
+	 */
+	private updateVeryBottomMessage() {
 		this.id_veryBottomMessage = this.bottomMessage?._id;
 	}
 
@@ -485,7 +489,7 @@ export class ChatManager {
 		return this.isCloseToTop && !this.isAtVeryTop;
 	}
 	get shouldLoadDown() {
-		return this.isCloseToBottom && !this.veryBottomMessageVisible;
+		return this.isCloseToBottom && !this.isAtVeryBottom;
 	}
 	/* ----------------------------------- ref ---------------------------------- */
 	get jumpTop(): number {
@@ -557,7 +561,7 @@ export class ChatManager {
 	}
 
 	/* the message at the very bottom of the list is visible Or not defined */
-	get veryBottomMessageVisible() {
+	get isAtVeryBottom() {
 		return (
 			this.bottomMessage == null || this.bottomMessage._id === this.id_veryBottomMessage
 		);
@@ -593,7 +597,7 @@ export class ChatManager {
 		let dtCmp = 0;
 		if (a._created_time && b._created_time) dtCmp = a._created_time - b._created_time;
 		if (dtCmp === 0 && a._created_date && b._created_date)
-			dtCmp = a._created_date.getTime() - b._created_date.getTime(); 
+			dtCmp = a._created_date.getTime() - b._created_date.getTime();
 		if (dtCmp === 0 && a._id && b._id) dtCmp = a._id.localeCompare(b._id);
 		if (dtCmp === 0 && a.data.text && b.data.text)
 			dtCmp = a.data.text.localeCompare(b.data.text);
