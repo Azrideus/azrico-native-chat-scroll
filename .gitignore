@@ -3,4 +3,5 @@ build
 dist
 
 .yarnrc.yml
-.yarn  
+.yarn 
+yarn-error.log
