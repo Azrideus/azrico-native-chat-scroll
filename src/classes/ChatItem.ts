@@ -43,7 +43,6 @@ export class ChatItem {
 		return await this.managerClass.updateMessageId(this, newid);
 	}
 	runRefreshFunction() {
-		console.log('runRefreshFunction');
 		return typeof this.refreshFunction === 'function' && this.refreshFunction();
 	}
 

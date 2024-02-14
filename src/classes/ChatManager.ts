@@ -36,7 +36,7 @@ export class ChatManager {
 
 	public show_logs = false;
 	public distanceToTop: number = 0;
-	public distanceToBottom: number = 0;
+	// public distanceToBottom: number = 0;
 	public loadBufferDistance: number = 800;
 	/* -------------------------------------------------------------------------- */
 
@@ -208,22 +208,22 @@ export class ChatManager {
 		return 0;
 	}
 
-	public async maybeLoad(checkDir = LoadDirection.NONE) {
-		let loadDir = LoadDirection.NONE;
-		if (checkDir != LoadDirection.NONE) {
-			/* --------------------- use checkDir to verify loadDir --------------------- */
-			if (checkDir === LoadDirection.DOWN && !this.isAtVeryBottom)
-				loadDir = checkDir;
-			else if (checkDir === LoadDirection.UP && !this.isAtVeryTop) loadDir = checkDir;
-		} else {
-			/* ------------------------- auto determine loaddir ------------------------- */
-			if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
-			else if (this.shouldLoadTop) loadDir = LoadDirection.UP;
-		}
+	// public async maybeLoad(checkDir = LoadDirection.NONE) {
+	// 	let loadDir = LoadDirection.NONE;
+	// 	if (checkDir != LoadDirection.NONE) {
+	// 		/* --------------------- use checkDir to verify loadDir --------------------- */
+	// 		if (checkDir === LoadDirection.DOWN && !this.isAtVeryBottom)
+	// 			loadDir = checkDir;
+	// 		else if (checkDir === LoadDirection.UP && !this.isAtVeryTop) loadDir = checkDir;
+	// 	} else {
+	// 		/* ------------------------- auto determine loaddir ------------------------- */
+	// 		if (this.shouldLoadDown) loadDir = LoadDirection.DOWN;
+	// 		else if (this.shouldLoadTop) loadDir = LoadDirection.UP;
+	// 	}
 
-		if (loadDir == LoadDirection.NONE) return false;
-		return await this.fetch_items(loadDir);
-	}
+	// 	if (loadDir == LoadDirection.NONE) return false;
+	// 	return await this.fetch_items(loadDir);
+	// }
 	/**
 	 * load more items in the given direction
 	 * @param direction
@@ -335,10 +335,14 @@ export class ChatManager {
 
 		let dirToRemove = LoadDirection.NONE;
 
-		if (this.lastLoadDirection === LoadDirection.UP && !this.isCloseToBottom) {
-			dirToRemove = LoadDirection.DOWN;
-		} else if (this.lastLoadDirection === LoadDirection.DOWN && !this.isCloseToTop) {
-			dirToRemove = LoadDirection.UP;
+		if (this.isCloseToTop) {
+			if (this.lastLoadDirection === LoadDirection.UP) {
+				dirToRemove = LoadDirection.DOWN;
+			}
+		} else {
+			if (this.lastLoadDirection === LoadDirection.DOWN) {
+				dirToRemove = LoadDirection.UP;
+			}
 		}
 
 		countToRemove = Math.min(countToRemove, inputItems.length);
@@ -363,7 +367,10 @@ export class ChatManager {
 	public update_reference(baseData?: ChatItem[]) {
 		if (!Array.isArray(baseData) || baseData.length === 0) baseData = this.currentItems;
 
-		this.references = { bottom: this.distanceToBottom, top: this.distanceToTop };
+		this.references = {
+			//bottom: this.distanceToBottom,
+			top: this.distanceToTop,
+		};
 
 		if (baseData.length > 0) {
 			if (this.lastLoadDirection === LoadDirection.UP) {
@@ -475,29 +482,29 @@ export class ChatManager {
 	get isPending() {
 		return this.currentLoadOperation != null;
 	}
-	get isSticky() {
-		return this.distanceToBottom < 200;
-	}
+	//get isSticky() {
+	//	return this.distanceToBottom < 200;
+	//}
 	get isCloseToTop() {
 		return this.distanceToTop < this.loadBufferDistance;
 	}
-	get isCloseToBottom() {
-		return this.distanceToBottom < this.loadBufferDistance;
-	}
+	//get isCloseToBottom() {
+	//	return this.distanceToBottom < this.loadBufferDistance;
+	//}
 
 	get shouldLoadTop() {
 		return this.isCloseToTop && !this.isAtVeryTop;
 	}
-	get shouldLoadDown() {
-		return this.isCloseToBottom && !this.isAtVeryBottom;
-	}
+	//get shouldLoadDown() {
+	//	return this.isCloseToBottom && !this.isAtVeryBottom;
+	//}
 	/* ----------------------------------- ref ---------------------------------- */
 	get jumpTop(): number {
 		return this.distanceToTop - this.referenceLastDistanceTop;
 	}
-	get jumpBottom(): number {
-		return this.distanceToBottom - this.referenceLastDistanceBottom;
-	}
+	//get jumpBottom(): number {
+	//	return this.distanceToBottom - this.referenceLastDistanceBottom;
+	//}
 	get jumpItem(): number {
 		return this.referenceItemCurrentTop - this.referenceItemLastTop;
 	}

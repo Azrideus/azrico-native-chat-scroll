@@ -4,10 +4,11 @@ import { ChatItem } from '../classes/ChatItem';
 import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
 import { useForceUpdate } from './useForceUpdate';
 import { LoadDirection } from '../classes/ChatManager';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 type Props = {
 	chatManager: ChatManager;
-	listRef: any;
+	listRef: React.MutableRefObject<VirtuosoHandle>;
 };
 
 const MID_MAX = Math.floor(Number.MAX_SAFE_INTEGER / 2);
@@ -61,6 +62,10 @@ export function useChatQuery({ listRef, chatManager }: Props) {
 		return await chatManager.fetch_items(LoadDirection.DOWN);
 	}
 	function onScroll(e) {
+		listRef.current.getState((s) => {
+			 
+			chatManager.distanceToTop = s.scrollTop;
+		});
 		// console.log(`onScroll`, e, listRef);
 	}
 	return {
