@@ -28,19 +28,23 @@ export function useChatQuery({ listRef, chatManager }: Props) {
 
 	function setItems(items: ChatItem[]) {
 		let delta = 0;
-		if (chatManager.lastLoadDirection === LoadDirection.UP)
-			delta = -chatManager.lastCountChange;
-		// else if (chatManager.lastLoadDirection === LoadDirection.DOWN && chatManager.isSticky)
-		// 	delta = -chatManager.lastCountChange;
+		if (chatManager.lastChangeDirection === LoadDirection.UP) {
+			delta = chatManager.lastCountChange;
+		} else if (chatManager.lastChangeDirection === LoadDirection.DOWN) {
+			// if (chatManager.lastCountChange > 0) delta = -chatManager.lastCountChange;
+		}
 
-		// console.log(`items.length`, items.length);
+		// console.log(`lastChangeDirection`, chatManager.lastChangeDirection);
 		// console.log(`delta`, delta);
 		// console.log(firstItemIndex, delta);
 
-		set_firstItemIndex((s) => {
-			// console.log('set_firstItemIndex:', s + delta);
-			return s + delta;
-		});
+		if (delta != 0) {
+			set_firstItemIndex((s) => {
+				// console.log('set_firstItemIndex:', s - delta);
+				return s - delta;
+			});
+		}
+
 		//
 		set_currentItems(items);
 		set_isAtVeryBottom(chatManager.isAtVeryBottom);
@@ -53,20 +57,19 @@ export function useChatQuery({ listRef, chatManager }: Props) {
 
 	async function startReached() {
 		if (!isReady.current) return [];
-		// console.log(`startReached`);
+		console.log(`startReached`);
 		return await chatManager.fetch_items(LoadDirection.UP);
 	}
 	async function endReached() {
 		if (!isReady.current) return [];
-		// console.log(`endReached`);
+		console.log(`endReached`);
 		return await chatManager.fetch_items(LoadDirection.DOWN);
 	}
 	function onScroll(e) {
 		listRef.current.getState((s) => {
-			 
 			chatManager.distanceToTop = s.scrollTop;
+			// console.log(`onScroll`, e, listRef);
 		});
-		// console.log(`onScroll`, e, listRef);
 	}
 	return {
 		currentItems,

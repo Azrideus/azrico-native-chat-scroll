@@ -31,8 +31,8 @@ type MessageSearchParams = ChatItem | ItemData | string | number;
 export class ChatManager {
 	//items we load in each batch
 	static BATCH_SIZE = 50;
-	static CLEAN_EXTRA_SIZE = 10;
-	static MAX_LOAD = ChatManager.BATCH_SIZE + ChatManager.CLEAN_EXTRA_SIZE + 10;
+	static CLEAN_EXTRA_SIZE = 0;
+	static MAX_LOAD = 2 * ChatManager.BATCH_SIZE + ChatManager.CLEAN_EXTRA_SIZE;
 
 	public show_logs = false;
 	public distanceToTop: number = 0;
@@ -46,7 +46,7 @@ export class ChatManager {
 
 	/* -------------------------------------------------------------------------- */
 	#lastLoadDirection: LoadDirection = LoadDirection.NONE;
-	#lastOperation: ChangeOperation = ChangeOperation.NONE;
+	#lastChangeDirection: LoadDirection = LoadDirection.NONE;
 	#lastCountChange: number = 0;
 	#lastDBLoad: number = 0;
 	#currentItems: ChatItem[] = [];
@@ -129,7 +129,7 @@ export class ChatManager {
 		if (rmIndex < 0) return false;
 		const newArr = [...this.currentItems];
 		newArr.splice(rmIndex, 1);
-		await this._setItems(newArr);
+		await this._setItems(newArr, false);
 		return true;
 	}
 
@@ -268,6 +268,7 @@ export class ChatManager {
 			[`final_chats:`, final_chats.length]
 		);
 		await this._addItems(final_chats, direction, true);
+		return final_chats;
 	}
 
 	/* -------------------------------------------------------------------------- */
@@ -287,8 +288,6 @@ export class ChatManager {
 		isFromDB: boolean = true
 	): Promise<number> {
 		this.#lastLoadDirection = direction;
-		this.#lastOperation =
-			direction === LoadDirection.UP ? ChangeOperation.ADD_UP : ChangeOperation.ADD_DOWN;
 		this.isLastLoadFromDB = isFromDB;
 
 		const resultItems = [...this.currentItems];
@@ -299,18 +298,28 @@ export class ChatManager {
 			//add below the list
 			resultItems.push(...items_to_add);
 		}
-		await this._setItems(resultItems);
-		return items_to_add.length;
+
+		const changeCount = await this._setItems(resultItems, true, direction);
+		return changeCount;
 	}
 	/**
 	 * set all current items
 	 * @param items
 	 * @returns
 	 */
-	private async _setItems(items: ChatItem[]): Promise<number> {
-		this.currentItems = this.cleanExtraItems(items);
+	private async _setItems(
+		items: ChatItem[],
+		cleanExtra = true,
+		direction = LoadDirection.NONE
+	): Promise<number> {
+		if (direction === LoadDirection.NONE) direction = this.lastChangeDirection;
+		/* ------------------------------ update items ------------------------------ */
+		this.currentItems = items;
+		/* ------------------------------- update vars ------------------------------ */
+		this.#lastChangeDirection = direction;
 		this.#lastCountChange = items.length - this.lastCount;
 		this.lastCount = this.currentItems.length;
+
 		this.after_update();
 
 		this.group_log(
@@ -321,39 +330,48 @@ export class ChatManager {
 		);
 
 		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
-		return this.currentItems.length;
+
+		/* ------ if there are extra items remove them and set the items again ------ */
+		//// if (cleanExtra && direction != LoadDirection.NONE && this.isOverTheMax()) {
+		//// 	setTimeout(() => {
+		//// 		const invertedDirection =
+		//// 			direction === LoadDirection.UP ? LoadDirection.DOWN : LoadDirection.UP;
+		//// 		const cleanedItems = this.cleanExtraItems(this.currentItems, invertedDirection);
+		//// 		return this._setItems(cleanedItems, false, invertedDirection);
+		//// 	}, 1000);
+		//// }
+		return this.#lastCountChange;
 	}
 
+	private isOverTheMax() {
+		return this.currentItems.length > ChatManager.MAX_LOAD;
+	}
 	/**
 	 * clear items in the given list to match the max item count
 	 */
-	private cleanExtraItems(inputItems: ChatItem[]): ChatItem[] {
-		if (inputItems.length <= ChatManager.MAX_LOAD) return inputItems;
-		let countToRemove = Math.abs(
-			ChatManager.MAX_LOAD - inputItems.length + ChatManager.CLEAN_EXTRA_SIZE
-		);
+	private cleanExtraItems(
+		inputItems: ChatItem[],
+		removeDirection = LoadDirection.NONE
+	): ChatItem[] {
+		if (!this.isOverTheMax()) return inputItems;
+		let newLenght = Math.min(ChatManager.MAX_LOAD, inputItems.length);
+		let countToRemove =
+			Math.abs(newLenght - inputItems.length) + ChatManager.CLEAN_EXTRA_SIZE;
 
-		let dirToRemove = LoadDirection.NONE;
-
-		if (this.isCloseToTop) {
-			if (this.lastLoadDirection === LoadDirection.UP) {
-				dirToRemove = LoadDirection.DOWN;
-			}
-		} else {
-			if (this.lastLoadDirection === LoadDirection.DOWN) {
-				dirToRemove = LoadDirection.UP;
-			}
+		//dont remove from UP if user is close to UP
+		if (removeDirection === LoadDirection.UP && this.isCloseToTop) {
+			removeDirection = LoadDirection.NONE;
 		}
 
 		countToRemove = Math.min(countToRemove, inputItems.length);
-		if (countToRemove === 0 || dirToRemove === LoadDirection.NONE) return inputItems;
+		if (countToRemove === 0 || removeDirection === LoadDirection.NONE) return inputItems;
 
 		let resultItems = [...inputItems];
 		//
-		if (dirToRemove === LoadDirection.UP) {
+		if (removeDirection === LoadDirection.UP) {
 			//remove from top
 			resultItems.splice(0, countToRemove);
-		} else if (dirToRemove === LoadDirection.DOWN) {
+		} else if (removeDirection === LoadDirection.DOWN) {
 			const rmStartIndex = Math.max(resultItems.length - countToRemove, 0);
 			resultItems.splice(rmStartIndex);
 		}
@@ -525,6 +543,9 @@ export class ChatManager {
 	get lastLoadDirection(): LoadDirection {
 		return this.#lastLoadDirection;
 	}
+	get lastChangeDirection(): LoadDirection {
+		return this.#lastChangeDirection;
+	}
 	get currentItems() {
 		return this.#currentItems;
 	}
@@ -561,7 +582,7 @@ export class ChatManager {
 		if (
 			this.bottomMessage == null &&
 			this.topMessage == null &&
-			this.lastOperation != ChangeOperation.NONE
+			this.lastChangeDirection != LoadDirection.NONE
 		)
 			return true;
 		return this.topMessage != null && this.topMessage._id === this.id_veryTopMessage;
@@ -583,10 +604,6 @@ export class ChatManager {
 	}
 	get lastDBLoad() {
 		return this.#lastDBLoad;
-	}
-
-	get lastOperation(): ChangeOperation {
-		return this.#lastOperation;
 	}
 
 	/* -------------------------------------------------------------------------- */
