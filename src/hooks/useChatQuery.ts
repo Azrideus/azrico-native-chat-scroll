@@ -57,13 +57,17 @@ export function useChatQuery({ listRef, chatManager }: Props) {
 
 	async function startReached() {
 		if (!isReady.current) return [];
-		console.log(`startReached`);
-		return await chatManager.fetch_items(LoadDirection.UP);
+		// console.log(`startReached`);
+		const result = await chatManager.fetch_items(LoadDirection.UP);
+		if (Array.isArray(result) && result.length > 0) return result;
+		return null;
 	}
 	async function endReached() {
 		if (!isReady.current) return [];
-		console.log(`endReached`);
-		return await chatManager.fetch_items(LoadDirection.DOWN);
+		// console.log(`endReached`);
+		const result = await chatManager.fetch_items(LoadDirection.DOWN);
+		if (Array.isArray(result) && result.length > 0) return result;
+		return null;
 	}
 	function onScroll(e) {
 		listRef.current.getState((s) => {

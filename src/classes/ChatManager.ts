@@ -267,7 +267,7 @@ export class ChatManager {
 			[`search_query:`, search_query],
 			[`final_chats:`, final_chats.length]
 		);
-		await this._addItems(final_chats, direction, true);
+		if(final_chats.length>0) await this._addItems(final_chats, direction, true);
 		return final_chats;
 	}
 
@@ -287,6 +287,7 @@ export class ChatManager {
 		direction: LoadDirection = LoadDirection.UP,
 		isFromDB: boolean = true
 	): Promise<number> {
+		if (items_to_add.length === 0) return 0;
 		this.#lastLoadDirection = direction;
 		this.isLastLoadFromDB = isFromDB;
 

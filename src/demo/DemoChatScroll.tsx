@@ -7,7 +7,7 @@ import VirtualChatList, {
 } from '../index';
 
 /* ------------------------------ initial chats ----------------------------- */
-import examplechats from './examplechats.json';
+import examplechats from './examplechats2.json';
 examplechats.forEach(TestChatLoader.addExampleChat);
 
 export function DemoChatScroll() {

@@ -73,12 +73,14 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 					return <>{isAtVeryTop ? props.TopContent : props.WrapperContent}</>;
 				},
 			}}
+			/* -------------------------------------------------------------------------- */
 			alignToBottom
 			ref={listRef}
 			onScroll={onScroll}
-			style={{ height: '100%', width: '100%' }}
+			style={{ height: '100%', width: '100%', overflowX: 'clip' }}
 			firstItemIndex={firstItemIndex}
 			initialTopMostItemIndex={initialTopMostItemIndex}
+			/* -------------------------------------------------------------------------- */
 			data={currentItems}
 			startReached={startReached}
 			endReached={endReached}
