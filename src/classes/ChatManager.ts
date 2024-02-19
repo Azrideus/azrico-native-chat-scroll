@@ -1,7 +1,5 @@
 import { ChatItem, ItemData } from './ChatItem';
 
-
-
 export enum LoadDirection {
 	DOWN = -1,
 	NONE = 0,
@@ -177,35 +175,56 @@ export class ChatManager {
 	 */
 	async sendNewMessage(
 		msglist: Array<ChatItem | any>,
-		dir = LoadDirection.DOWN
+		dir = LoadDirection.DOWN,
+		loadIdFunction?: () => Promise<string>
 	): Promise<number> {
-		if (!msglist) return 0;
-		if (!Array.isArray(msglist)) msglist = [msglist];
-		// convert inputs to ChatItem
-		const messagesToAdd = msglist
-			.flat()
-			.filter((s) => s)
-			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
+		try {
+			if (this.currentLoadOperation != null) await this.currentLoadOperation;
+			const inner_sendNewMessage = async () => {
+				if (!msglist) return 0;
+				if (!Array.isArray(msglist)) msglist = [msglist];
+				//convert inputs to ChatItem
+				const messagesToAdd = msglist
+					.flat()
+					.filter((s) => s)
+					.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
 
-		//make sure the messages are not already loaded :
-		const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s._id]);
+				//make sure the messages are not already loaded :
+				const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s._id]);
 
-		this.group_log(
-			'sendNewMessage',
-			['msglist', msglist.length],
-			['messagesToAdd', messagesToAdd.length],
-			['newMessagesToAdd', newMessagesToAdd.length],
-			['veryBottomMessageVisible', this.isAtVeryBottom]
-		);
+				this.group_log(
+					'sendNewMessage',
+					['msglist', msglist.length],
+					['messagesToAdd', messagesToAdd.length],
+					['newMessagesToAdd', newMessagesToAdd.length],
+					['veryBottomMessageVisible', this.isAtVeryBottom]
+				);
 
-		if (newMessagesToAdd.length === 0) return 0;
-		if (this.isAtVeryBottom) {
-			const addCount = await this._addItems(newMessagesToAdd, dir, false);
-			//if a new message is added the bottom message must change
-			this.updateVeryBottomMessage();
-			return addCount;
+				if (newMessagesToAdd.length === 0) return 0; //nothing to add
+				if (!this.isAtVeryBottom) return 0; //visible list is not updated
+
+				const addCount = await this._addItems(newMessagesToAdd, dir, false);
+
+				/* ---------------- one message was added and we need its id ---------------- */
+				if (
+					newMessagesToAdd.length === 1 &&
+					addCount === 1 &&
+					typeof loadIdFunction === 'function'
+				) {
+					const newid = await loadIdFunction();
+					await this.updateMessageId(newMessagesToAdd[0], newid);
+				}
+
+				//if a new message is added the bottom message must change
+				this.updateVeryBottomMessage();
+				return addCount;
+			};
+
+			this.currentLoadOperation = inner_sendNewMessage();
+			return await this.currentLoadOperation;
+		} finally {
+			this.currentLoadOperation = null;
 		}
-		return 0;
 	}
 
 	// public async maybeLoad(checkDir = LoadDirection.NONE) {
@@ -229,46 +248,48 @@ export class ChatManager {
 	 * @param direction
 	 */
 	public async fetch_items(direction: LoadDirection = LoadDirection.UP) {
-		if (this.currentLoadOperation != null) await this.currentLoadOperation;
-		this.currentLoadOperation = this.fetch_items_inner(direction);
-		const opres = await this.currentLoadOperation;
-		this.currentLoadOperation = null;
-		return opres;
-	}
+		try {
+			if (this.currentLoadOperation != null) await this.currentLoadOperation;
+			const inner_fetch_items = async (direction: LoadDirection = LoadDirection.UP) => {
+				if (!this.loadFunction) return;
+				const search_query: SearchQuery = {
+					limit: ChatManager.BATCH_SIZE,
+				};
+				if (direction == LoadDirection.DOWN) {
+					search_query.sort = { _created_date: 1 };
+					if (this.bottomMessage?._created_date)
+						search_query._created_date = { $gte: this.bottomMessage?._created_date };
+				} else {
+					search_query.sort = { _created_date: -1 };
+					if (this.topMessage?._created_date)
+						search_query._created_date = { $lte: this.topMessage?._created_date };
+				}
 
-	private async fetch_items_inner(direction: LoadDirection = LoadDirection.UP) {
-		if (!this.loadFunction) return;
-		const search_query: SearchQuery = {
-			limit: ChatManager.BATCH_SIZE,
-		};
-		if (direction == LoadDirection.DOWN) {
-			search_query.sort = { _created_date: 1 };
-			if (this.bottomMessage?._created_date)
-				search_query._created_date = { $gte: this.bottomMessage?._created_date };
-		} else {
-			search_query.sort = { _created_date: -1 };
-			if (this.topMessage?._created_date)
-				search_query._created_date = { $lte: this.topMessage?._created_date };
+				search_query.exclude = Object.keys(this.itemsIndexMap);
+
+				const loaded_items = await this.loadFunction(search_query);
+				this.#lastDBLoad = loaded_items.length;
+
+				/* ------------------------ convert items to ChatItem ----------------------- */
+				let final_chats = loaded_items
+					.map((r, i) => new ChatItem(this, r))
+					.sort(ChatManager.item_sort);
+
+				this.group_log(
+					'load_items',
+					[`direction:`, direction],
+					[`search_query:`, search_query],
+					[`final_chats:`, final_chats.length]
+				);
+				if (final_chats.length > 0) await this._addItems(final_chats, direction, true);
+				return final_chats;
+			};
+			this.currentLoadOperation = inner_fetch_items(direction);
+
+			return await this.currentLoadOperation;
+		} finally {
+			this.currentLoadOperation = null;
 		}
-
-		search_query.exclude = Object.keys(this.itemsIndexMap);
-
-		const loaded_items = await this.loadFunction(search_query);
-		this.#lastDBLoad = loaded_items.length;
-
-		/* ------------------------ convert items to ChatItem ----------------------- */
-		let final_chats = loaded_items
-			.map((r, i) => new ChatItem(this, r))
-			.sort(ChatManager.item_sort);
-
-		this.group_log(
-			'load_items',
-			[`direction:`, direction],
-			[`search_query:`, search_query],
-			[`final_chats:`, final_chats.length]
-		);
-		if(final_chats.length>0) await this._addItems(final_chats, direction, true);
-		return final_chats;
 	}
 
 	/* -------------------------------------------------------------------------- */
@@ -330,7 +351,8 @@ export class ChatManager {
 			['itemsIndexMap', Object.keys(this.itemsIndexMap).length, this.itemsIndexMap]
 		);
 
-		if (this.setItemsFunction) await this.setItemsFunction(this.currentItems);
+		if (typeof this.setItemsFunction === 'function')
+			await this.setItemsFunction(this.currentItems);
 
 		/* ------ if there are extra items remove them and set the items again ------ */
 		//// if (cleanExtra && direction != LoadDirection.NONE && this.isOverTheMax()) {

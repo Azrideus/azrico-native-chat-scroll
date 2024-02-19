@@ -52,14 +52,14 @@ export class TestChatLoader {
 						);
 					}
 				}
-			
+
 				if (Array.isArray(exclude)) {
 					searchedItems = searchedItems.filter((s) => !exclude.includes(s._id));
 				}
 				if (sort._created_date) {
 					const sortdir = sort._created_date;
-					
-					searchedItems=searchedItems.sort((a, b) =>
+
+					searchedItems = searchedItems.sort((a, b) =>
 						ChatManager.item_sort(a, b, sortdir)
 					) as any[];
 				}
@@ -89,24 +89,26 @@ export class TestChatLoader {
 	 * add an example message to the test chat list
 	 * @param newmsg
 	 */
-	static addExampleChat(newmsg: any) {
-		TestChatLoader.itemsInDB.unshift({
+	static addExampleChat(newmsg: any): string {
+		const msgid = newmsg['_id'] ?? `oldmsg-${UIDHelper.nextid()}`;
+		const obj = {
 			...newmsg,
-			_id: newmsg['_id'] ?? `oldmsg-${UIDHelper.nextid()}`,
+			_id: msgid,
 			text: newmsg['text'] ?? newmsg['Content'],
 			_creator: newmsg['_creator'] ?? newmsg['user'],
 			_created_date: new Date(
 				newmsg['_created_date'] ?? newmsg['Date'] ?? newmsg['date']
 			),
-		});
-		return true;
+		};
+		TestChatLoader.itemsInDB.unshift(obj);
+		return msgid;
 	}
 	/**
 	 * add an example message to the test chat list
 	 * has delay of 200-400ms
 	 * @param newmsg
 	 */
-	static async addExampleChatAsync(newmsg: any) {
+	static async addExampleChatAsync(newmsg: any):Promise<string> {
 		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
 				resolve(TestChatLoader.addExampleChat(newmsg));

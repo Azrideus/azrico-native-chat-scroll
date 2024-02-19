@@ -7,7 +7,7 @@ import VirtualChatList, {
 } from '../index';
 
 /* ------------------------------ initial chats ----------------------------- */
-import examplechats from './examplechats2.json';
+import examplechats from './examplechats.json';
 examplechats.forEach(TestChatLoader.addExampleChat);
 
 export function DemoChatScroll() {
@@ -16,8 +16,11 @@ export function DemoChatScroll() {
 	const timerRef = React.useRef<any>();
 
 	async function addNewMsg(obj: any, dir = LoadDirection.DOWN) {
-		TestChatLoader.addExampleChat(obj);
-		await managerRef.current?.sendNewMessage(obj, dir);
+		return await managerRef.current?.sendNewMessage(
+			obj,
+			dir,
+			async () => await TestChatLoader.addExampleChatAsync(obj)
+		);
 	}
 	async function addLoop(firsttime = false) {
 		if (TestChatLoader.getExampleChatLenght() > 1000) return;
@@ -41,7 +44,6 @@ export function DemoChatScroll() {
 		e.preventDefault();
 		if (message) {
 			const newMsg = {
-				_id: 'new-' + TestChatLoader.getExampleChatLenght(),
 				_creator: 'me',
 				text: message,
 				date: new Date(),
