@@ -29,6 +29,11 @@
     jsonpointer "^5.0.0"
     leven "^3.1.0"
 
+"@azrico/react-virtuoso@^4.6.3":
+  version "4.6.3"
+  resolved "https://registry.yarnpkg.com/@azrico/react-virtuoso/-/react-virtuoso-4.6.3.tgz#f639bfe6ac1162094cf928c7bb3a997663568d21"
+  integrity sha512-TCAUMcRFTziBt7phWvpvXavIy2pCqb7TDewAidynZV9osaNWEluB+vEYCoLXCXXFnkXMq7rNIwVp7B4y4IXntg==
+
 "@azrico/types@^1.0.9":
   version "1.0.9"
   resolved "https://registry.yarnpkg.com/@azrico/types/-/types-1.0.9.tgz#846427ebce545861026208e290f893cd793cafb8"
@@ -9965,11 +9970,6 @@ react-shallow-renderer@16.14.1:
   dependencies:
     object-assign "^4.1.1"
     react-is "^16.12.0 || ^17.0.0"
-
-react-virtuoso@^4.6.3:
-  version "4.6.3"
-  resolved "https://registry.yarnpkg.com/react-virtuoso/-/react-virtuoso-4.6.3.tgz#95f3a7905863a51bba3aa724c5ee79ccaf0400fb"
-  integrity sha512-NcoSsf4B0OCx7U8i2s+VWe8b9e+FWzcN/5ly4hKjErynBzGONbWORZ1C5amUlWrPi6+HbUQ2PjnT4OpyQIpP9A==
 
 react@^18.0.0:
   version "18.2.0"

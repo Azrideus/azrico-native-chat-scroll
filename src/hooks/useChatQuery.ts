@@ -2,9 +2,9 @@ import React from 'react';
 
 import { ChatItem } from '../classes/ChatItem';
 import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
-import { useForceUpdate } from './useForceUpdate';
+ 
 import { LoadDirection } from '../classes/ChatManager';
-import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { Virtuoso, VirtuosoHandle } from '@azrico/react-virtuoso';
 
 type Props = {
 	chatManager: ChatManager;

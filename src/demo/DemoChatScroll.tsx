@@ -53,8 +53,7 @@ export function DemoChatScroll() {
 		}
 
 		return false;
-	}
-
+	} 
 	return (
 		<div
 			style={{

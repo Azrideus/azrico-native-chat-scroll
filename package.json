@@ -1,6 +1,6 @@
 {
 	"name": "@azrico/native-chat-scroll",
-	"version": "1.0.19",
+	"version": "1.0.23",
 	"main": "dist/index.js",
 	"source": "./index.ts",
 	"scripts": {
@@ -41,7 +41,7 @@
 		"react": "*",
 		"react-dom": "*",
 		"react-native": "*",
-		"react-virtuoso": "*"
+		"@azrico/react-virtuoso": "*"
 	},
 	"dependencies": {
 		"@azrico/types": "^1.0.9",
@@ -49,7 +49,7 @@
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0",
 		"react-native": "^0.68.4",
-		"react-virtuoso": "^4.6.3"
+		"@azrico/react-virtuoso": "^4.6.3"
 	},
 	"config-overrides-path": "config/config-overrides.js",
 	"browserslist": {

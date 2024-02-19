@@ -62,14 +62,14 @@ module.exports = (config, env) => {
 					inputSourceMap: true,
 				},
 			}),
-			addWebpackAlias({
-				crypto: 'crypto-browserify',
-				stream: 'stream-browserify',
-				path: 'path-browserify',
-				'react-native': 'react-native-web',
-				cldr: 'cldrjs/dist/cldr',
-				cldr$: 'cldrjs',
-			}),
+			// addWebpackAlias({
+			// 	crypto: 'crypto-browserify',
+			// 	stream: 'stream-browserify',
+			// 	path: 'path-browserify',
+			// 	'react-native': 'react-native-web',
+			// 	cldr: 'cldrjs/dist/cldr',
+			// 	cldr$: 'cldrjs',
+			// }),
 			useBabelRc(),
 			babelInclude([path.resolve('src')])
 			// addDecoratorsLegacy(),

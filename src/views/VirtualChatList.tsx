@@ -8,7 +8,7 @@ import { useChatManager } from '../hooks/useChatManager';
  
 import { View } from 'react-native';
 import { useChatQuery } from '../hooks';
-import { Virtuoso, VirtuosoGridProps, VirtuosoProps } from 'react-virtuoso';
+import { Virtuoso, VirtuosoGridProps, VirtuosoProps } from '@azrico/react-virtuoso';
 
 /* -------------------------------------------------------------------------- */
 type ItemPropsType = any;
