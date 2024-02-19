@@ -1,4 +1,5 @@
 import { ChatItem, ItemData } from './ChatItem';
+import { UIDHelper } from './HelperFunctions';
 
 export enum LoadDirection {
 	DOWN = -1,
@@ -60,7 +61,7 @@ export class ChatManager {
 	private lastCount: number = 0;
 
 	private id_veryTopMessage?: any;
-	private id_veryBottomMessage?: any;
+	private veryBottomMessage?: ChatItem;
 
 	private currentLoadOperation?: any;
 
@@ -150,21 +151,36 @@ export class ChatManager {
 	 * @param newid
 	 * @returns true if success, false otherwise
 	 */
-	async updateMessageId(message: MessageSearchParams, newid: string) {
+	async updateMessageId(
+		message: MessageSearchParams,
+		newid: string,
+		checkExisting = true
+	) {
 		const updateMessage = this.getMessage(message);
 		if (!updateMessage) return false;
 
-		const existingMessage = this.getMessage(newid);
-		if (existingMessage) {
-			this.log('updateMessageId', `removing existing message with id ${newid}`);
-			await this.deleteMessage(existingMessage);
+		if (checkExisting) {
+			const existingMessage = this.getMessage(newid);
+			if (existingMessage) {
+				this.log_error('updateMessageId', `removing existing message with id ${newid}`);
+				await this.updateMessageId(existingMessage, 'deleted-' + UIDHelper.nextid());
+				await this.deleteMessage(existingMessage);
+			}
 		}
+
 		/* ------------------------------ update the id ----------------------------- */
+		const oldid = (updateMessage as any)._id;
 		(updateMessage as any)._id = newid;
 
 		this.buildIndexMap();
+
+		this.group_log(
+			`updateMessageId`,
+			[`${oldid}`, `-> ${newid}`],
+			['itemsIndexMap', this.itemsIndexMap]
+		);
+
 		await this.refreshMessage(updateMessage);
-		this.log('updateMessageId', `${updateMessage._id}`, `-> ${newid}`);
 		return true;
 	}
 
@@ -180,51 +196,48 @@ export class ChatManager {
 	): Promise<number> {
 		try {
 			if (this.currentLoadOperation != null) await this.currentLoadOperation;
-			const inner_sendNewMessage = async () => {
-				if (!msglist) return 0;
-				if (!Array.isArray(msglist)) msglist = [msglist];
-				//convert inputs to ChatItem
-				const messagesToAdd = msglist
-					.flat()
-					.filter((s) => s)
-					.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
-
-				//make sure the messages are not already loaded :
-				const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s._id]);
-
-				this.group_log(
-					'sendNewMessage',
-					['msglist', msglist.length],
-					['messagesToAdd', messagesToAdd.length],
-					['newMessagesToAdd', newMessagesToAdd.length],
-					['veryBottomMessageVisible', this.isAtVeryBottom]
-				);
-
-				if (newMessagesToAdd.length === 0) return 0; //nothing to add
-				if (!this.isAtVeryBottom) return 0; //visible list is not updated
-
-				const addCount = await this._addItems(newMessagesToAdd, dir, false);
-
-				/* ---------------- one message was added and we need its id ---------------- */
-				if (
-					newMessagesToAdd.length === 1 &&
-					addCount === 1 &&
-					typeof loadIdFunction === 'function'
-				) {
-					const newid = await loadIdFunction();
-					await this.updateMessageId(newMessagesToAdd[0], newid);
-				}
-
-				//if a new message is added the bottom message must change
-				this.updateVeryBottomMessage();
-				return addCount;
-			};
-
-			this.currentLoadOperation = inner_sendNewMessage();
+			this.currentLoadOperation = this.inner_sendNewMessage(msglist, dir, loadIdFunction);
 			return await this.currentLoadOperation;
 		} finally {
 			this.currentLoadOperation = null;
 		}
+	}
+	private async inner_sendNewMessage(
+		msglist: Array<ChatItem | any>,
+		dir = LoadDirection.DOWN,
+		loadIdFunction?: () => Promise<string>
+	): Promise<number> {
+		if (!msglist) return 0;
+		if (!Array.isArray(msglist)) msglist = [msglist];
+		//convert inputs to ChatItem
+		const messagesToAdd = msglist
+			.flat()
+			.filter((s) => s)
+			.map((r: any) => (r instanceof ChatItem ? r : new ChatItem(this, r)));
+		//make sure the messages are not already loaded :
+		const newMessagesToAdd = messagesToAdd.filter((s) => !this.itemsIndexMap[s._id]);
+		this.group_log(
+			'sendNewMessage',
+			['msglist', msglist.length],
+			['messagesToAdd', messagesToAdd.length],
+			['newMessagesToAdd', newMessagesToAdd.length],
+			['veryBottomMessageVisible', this.isAtVeryBottom]
+		);
+		if (newMessagesToAdd.length === 0) return 0; //nothing to add
+		if (!this.isAtVeryBottom) return 0; //visible list is not updated
+		const addCount = await this._addItems(newMessagesToAdd, dir, false);
+		/* ---------------- one message was added and we need its id ---------------- */
+		if (
+			newMessagesToAdd.length === 1 &&
+			addCount === 1 &&
+			typeof loadIdFunction === 'function'
+		) {
+			const newid = await loadIdFunction();
+			await this.updateMessageId(newMessagesToAdd[0], newid);
+		}
+		//if a new message is added the bottom message must change
+		this.updateVeryBottomMessage();
+		return addCount;
 	}
 
 	// public async maybeLoad(checkDir = LoadDirection.NONE) {
@@ -250,46 +263,45 @@ export class ChatManager {
 	public async fetch_items(direction: LoadDirection = LoadDirection.UP) {
 		try {
 			if (this.currentLoadOperation != null) await this.currentLoadOperation;
-			const inner_fetch_items = async (direction: LoadDirection = LoadDirection.UP) => {
-				if (!this.loadFunction) return;
-				const search_query: SearchQuery = {
-					limit: ChatManager.BATCH_SIZE,
-				};
-				if (direction == LoadDirection.DOWN) {
-					search_query.sort = { _created_date: 1 };
-					if (this.bottomMessage?._created_date)
-						search_query._created_date = { $gte: this.bottomMessage?._created_date };
-				} else {
-					search_query.sort = { _created_date: -1 };
-					if (this.topMessage?._created_date)
-						search_query._created_date = { $lte: this.topMessage?._created_date };
-				}
-
-				search_query.exclude = Object.keys(this.itemsIndexMap);
-
-				const loaded_items = await this.loadFunction(search_query);
-				this.#lastDBLoad = loaded_items.length;
-
-				/* ------------------------ convert items to ChatItem ----------------------- */
-				let final_chats = loaded_items
-					.map((r, i) => new ChatItem(this, r))
-					.sort(ChatManager.item_sort);
-
-				this.group_log(
-					'load_items',
-					[`direction:`, direction],
-					[`search_query:`, search_query],
-					[`final_chats:`, final_chats.length]
-				);
-				if (final_chats.length > 0) await this._addItems(final_chats, direction, true);
-				return final_chats;
-			};
-			this.currentLoadOperation = inner_fetch_items(direction);
-
+			this.currentLoadOperation = this.inner_fetch_items(direction);
 			return await this.currentLoadOperation;
 		} finally {
 			this.currentLoadOperation = null;
 		}
+	}
+	private async inner_fetch_items(direction: LoadDirection = LoadDirection.UP) {
+		if (!this.loadFunction) return;
+		const search_query: SearchQuery = {
+			limit: ChatManager.BATCH_SIZE,
+		};
+		if (direction == LoadDirection.DOWN) {
+			search_query.sort = { _created_date: 1 };
+			if (this.bottomMessage?._created_date)
+				search_query._created_date = { $gte: this.bottomMessage?._created_date };
+		} else {
+			search_query.sort = { _created_date: -1 };
+			if (this.topMessage?._created_date)
+				search_query._created_date = { $lte: this.topMessage?._created_date };
+		}
+
+		search_query.exclude = Object.keys(this.itemsIndexMap);
+
+		const loaded_items = await this.loadFunction(search_query);
+		this.#lastDBLoad = loaded_items.length;
+
+		/* ------------------------ convert items to ChatItem ----------------------- */
+		let final_chats = loaded_items
+			.map((r, i) => new ChatItem(this, r))
+			.sort(ChatManager.item_sort);
+
+		this.group_log(
+			'load_items',
+			[`direction:`, direction],
+			[`search_query:`, search_query],
+			[`final_chats:`, final_chats.length]
+		);
+		if (final_chats.length > 0) await this._addItems(final_chats, direction, true);
+		return final_chats;
 	}
 
 	/* -------------------------------------------------------------------------- */
@@ -321,8 +333,7 @@ export class ChatManager {
 			resultItems.push(...items_to_add);
 		}
 
-		const changeCount = await this._setItems(resultItems, true, direction);
-		return changeCount;
+		return await this._setItems(resultItems, true, direction);
 	}
 	/**
 	 * set all current items
@@ -347,8 +358,7 @@ export class ChatManager {
 		this.group_log(
 			'setItems',
 			['lastCountChange', this.lastCountChange],
-			['items', this.currentItems],
-			['itemsIndexMap', Object.keys(this.itemsIndexMap).length, this.itemsIndexMap]
+			['items', this.currentItems]
 		);
 
 		if (typeof this.setItemsFunction === 'function')
@@ -483,7 +493,7 @@ export class ChatManager {
 			// clear top/bot if we are in middle of the list
 			// so we can correctly detect new messages that are added below the veryBottomMessage
 			if (this.id_veryBottomMessage != this.bottomMessage?._id) {
-				this.id_veryBottomMessage = -1;
+				this.veryBottomMessage = undefined;
 			}
 			if (this.id_veryTopMessage != this.topMessage?._id) {
 				this.id_veryTopMessage = -1;
@@ -496,7 +506,7 @@ export class ChatManager {
 	 * no message below this message exists
 	 */
 	private updateVeryBottomMessage() {
-		this.id_veryBottomMessage = this.bottomMessage?._id;
+		this.veryBottomMessage = this.bottomMessage;
 	}
 
 	/* ----------------------------------- log ---------------------------------- */
@@ -520,6 +530,12 @@ export class ChatManager {
 
 	/* --------------------------------- getters -------------------------------- */
 
+	get id_veryBottomMessage() {
+		return this.veryBottomMessage?._id;
+	}
+	get date_veryBottomMessage() {
+		return this.veryBottomMessage?._created_date;
+	}
 	get isPending() {
 		return this.currentLoadOperation != null;
 	}
@@ -613,9 +629,22 @@ export class ChatManager {
 
 	/* the message at the very bottom of the list is visible Or not defined */
 	get isAtVeryBottom() {
-		return (
-			this.bottomMessage == null || this.bottomMessage._id === this.id_veryBottomMessage
-		);
+		//
+		if (
+			this.bottomMessage == null ||
+			this.bottomMessage._id === this.id_veryBottomMessage
+		)
+			return true;
+
+		//used  to fix edge cases when bottom message is not updated correctly...
+		if (
+			this.date_veryBottomMessage instanceof Date &&
+			this.bottomMessage._created_date instanceof Date &&
+			this.date_veryBottomMessage.getTime() < this.bottomMessage._created_date.getTime()
+		)
+			return true;
+
+		return false;
 	}
 
 	/* number of changed items in the last load */
