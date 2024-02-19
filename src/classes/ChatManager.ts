@@ -195,8 +195,9 @@ export class ChatManager {
 		loadIdFunction?: () => Promise<string>
 	): Promise<number> {
 		try {
-			if (this.currentLoadOperation != null) await this.currentLoadOperation;
+			if (this.currentLoadOperation != null) await this.currentLoadOperation; 
 			this.currentLoadOperation = this.inner_sendNewMessage(msglist, dir, loadIdFunction);
+
 			return await this.currentLoadOperation;
 		} finally {
 			this.currentLoadOperation = null;
@@ -205,7 +206,7 @@ export class ChatManager {
 	private async inner_sendNewMessage(
 		msglist: Array<ChatItem | any>,
 		dir = LoadDirection.DOWN,
-		loadIdFunction?: () => Promise<string>
+		loadIdFunction?: (msg: ChatItem) => Promise<string>
 	): Promise<number> {
 		if (!msglist) return 0;
 		if (!Array.isArray(msglist)) msglist = [msglist];
@@ -225,14 +226,16 @@ export class ChatManager {
 		);
 		if (newMessagesToAdd.length === 0) return 0; //nothing to add
 		if (!this.isAtVeryBottom) return 0; //visible list is not updated
+
 		const addCount = await this._addItems(newMessagesToAdd, dir, false);
 		/* ---------------- one message was added and we need its id ---------------- */
+ 
 		if (
 			newMessagesToAdd.length === 1 &&
 			addCount === 1 &&
 			typeof loadIdFunction === 'function'
 		) {
-			const newid = await loadIdFunction();
+			const newid = await loadIdFunction.call(this, newMessagesToAdd[0]);
 			await this.updateMessageId(newMessagesToAdd[0], newid);
 		}
 		//if a new message is added the bottom message must change
