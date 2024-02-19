@@ -8,13 +8,15 @@ import { useChatManager } from '../hooks/useChatManager';
  
 import { View } from 'react-native';
 import { useChatQuery } from '../hooks';
-import { Virtuoso } from 'react-virtuoso';
+import { Virtuoso, VirtuosoGridProps, VirtuosoProps } from 'react-virtuoso';
 
 /* -------------------------------------------------------------------------- */
 type ItemPropsType = any;
 type VirtualScrollerProps = {
 	loadFunction: LoadFunctionType;
 	ItemRender: React.ElementType<ItemRenderProps>;
+	/* -------------------------------------------------------------------------- */
+	gridProps?: VirtuosoProps<any, any>;
 	/* -------------------------------------------------------------------------- */
 	newItems?: ItemData[];
 	WrapperContent?: React.ReactNode;
@@ -65,6 +67,7 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 	});
 	return (
 		<Virtuoso
+			{...props.gridProps}
 			components={{
 				Footer: () => {
 					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;

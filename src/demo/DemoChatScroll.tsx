@@ -128,7 +128,7 @@ function TopContent(props: any) {
 	return <div>You have reached the top of the list</div>;
 }
 function ItemRender(props: any) {
-   
+    
 	const item = props.item;
 	const chatitem = props.chatitem as ChatItem;
 	const previtem = props.previtem;
@@ -148,11 +148,10 @@ function ItemRender(props: any) {
 
 	const isByMe = item._creator === 'me';
 	const needProfile = previtem?._creator != item._creator;
-	const randomH = React.useMemo(() => Math.random() * 100 + 100, []);
-
 	return (
 		<div
 			style={{
+				height: 'max-content',
 				padding: '5px',
 				display: 'flex',
 				flexDirection: 'column',
@@ -197,7 +196,7 @@ function ItemRender(props: any) {
 					</button>
 				</div>
 
-				<p style={{ height: randomH, whiteSpace: 'pre-line' }}>{item.text}</p>
+				<p style={{ whiteSpace: 'pre-line' }}>{item.text}</p>
 				<p>{formatDate(item._created_date)}</p>
 			</div>
 		</div>
