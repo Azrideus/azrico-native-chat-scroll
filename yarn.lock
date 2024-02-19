@@ -29,10 +29,12 @@
     jsonpointer "^5.0.0"
     leven "^3.1.0"
 
-"@azrico/react-virtuoso@^4.6.3":
-  version "4.6.3"
-  resolved "https://registry.yarnpkg.com/@azrico/react-virtuoso/-/react-virtuoso-4.6.3.tgz#f639bfe6ac1162094cf928c7bb3a997663568d21"
-  integrity sha512-TCAUMcRFTziBt7phWvpvXavIy2pCqb7TDewAidynZV9osaNWEluB+vEYCoLXCXXFnkXMq7rNIwVp7B4y4IXntg==
+"@azrico/react-virtuoso@^4.6.4":
+  version "4.6.4"
+  resolved "https://registry.yarnpkg.com/@azrico/react-virtuoso/-/react-virtuoso-4.6.4.tgz#62e0a8959ea1f1ff4f01fab94412823306916875"
+  integrity sha512-ZjynwpP6ZoKM6B2CTK3zp9lv2WK41YoBQUnPJ8G++HhnWQTdhQofIJ5kOzLECjaYJs/fOfZZr4Rlvpp3to6+mA==
+  dependencies:
+    "@juggle/resize-observer" "^3.4.0"
 
 "@azrico/types@^1.0.9":
   version "1.0.9"
@@ -1745,6 +1747,11 @@
   dependencies:
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
+
+"@juggle/resize-observer@^3.4.0":
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/@juggle/resize-observer/-/resize-observer-3.4.0.tgz#08d6c5e20cf7e4cc02fd181c4b0c225cd31dbb60"
+  integrity sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==
 
 "@leichtgewicht/ip-codec@^2.0.1":
   version "2.0.4"
