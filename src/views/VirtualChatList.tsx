@@ -44,23 +44,15 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-const Item = React.forwardRef<any, { children: React.ReactNode }>((props, ref) => {
-	return (
-		<li {...props} ref={ref}>
-			{props.children}
-		</li>
-	);
-});
-const List = React.forwardRef<
-	any,
-	ListProps & { context?: Context<unknown>; className?: string }
->((props, ref) => {
-	return (
-		<ul className={props.className} {...props} ref={ref}>
-			{props.children}
-		</ul>
-	);
-});
+ 
+const List = (customprops) =>
+	React.forwardRef<any, ListProps & { context?: Context<unknown> }>((props, ref) => {
+		return (
+			<ul {...customprops} {...props} ref={ref}>
+				{props.children}
+			</ul>
+		);
+	});
 /* -------------------------------------------------------------------------- */
 /**
  * Advanced Virtual scrolling
@@ -92,8 +84,7 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 			{...props.gridProps}
 			className={props.className}
 			components={{
-				Item: Item as any,
-				List: (innerprops) => <List {...innerprops} className={props.innerClassName} />,
+				List: List({ className: props.innerClassName }),
 				Footer: () => {
 					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;
 				},
