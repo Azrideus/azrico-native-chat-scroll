@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { Context } from 'react';
 import { UIDHelper, useForceUpdate } from '../classes/HelperFunctions';
 import { ChatItem, ItemData } from '../classes/ChatItem';
-import ChatManager, {
-	LoadFunctionType, 
-} from '../classes/ChatManager';
+import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
 import { useChatManager } from '../hooks/useChatManager';
- 
+
 import { View } from 'react-native';
 import { useChatQuery } from '../hooks';
-import { Virtuoso, VirtuosoGridProps, VirtuosoProps } from '@azrico/react-virtuoso';
+import {
+	Virtuoso,
+	VirtuosoGridProps,
+	VirtuosoProps,
+	ListProps,
+} from '@azrico/react-virtuoso';
 
 /* -------------------------------------------------------------------------- */
 type ItemPropsType = any;
@@ -40,6 +43,18 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 	return <VirtualChatListInner {...props} />;
 }
 
+/* -------------------------------------------------------------------------- */
+const List = React.forwardRef<
+	HTMLDivElement,
+	ListProps & { context?: Context<unknown>; className?: string }
+>((props, ref) => {
+	return (
+		<div className={props.className} {...props} ref={ref}>
+			{props.children}
+		</div>
+	);
+});
+/* -------------------------------------------------------------------------- */
 /**
  * Advanced Virtual scrolling
  * use the debug prop to enable logs
@@ -68,7 +83,9 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 	return (
 		<Virtuoso
 			{...props.gridProps}
+			className={props.className}
 			components={{
+				List: (innerprops) => <List {...innerprops} className={props.innerClassName} />,
 				Footer: () => {
 					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;
 				},
@@ -128,8 +145,7 @@ const RowRender = React.memo((props: RowRenderProps) => {
 		</View>
 	);
 });
-	
- 
+
 export type ItemRenderProps = {
 	chatitem: ChatItem;
 	item: ItemData;
