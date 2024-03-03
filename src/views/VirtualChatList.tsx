@@ -4,13 +4,13 @@ import { ChatItem, ItemData } from '../classes/ChatItem';
 import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
 import { useChatManager } from '../hooks/useChatManager';
 
-import { View } from 'react-native';
 import { useChatQuery } from '../hooks';
 import {
 	Virtuoso,
 	VirtuosoGridProps,
 	VirtuosoProps,
 	ListProps,
+	ItemProps,
 } from '@azrico/react-virtuoso';
 
 /* -------------------------------------------------------------------------- */
@@ -44,15 +44,36 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 }
 
 /* -------------------------------------------------------------------------- */
- 
+
 const List = (customprops) =>
 	React.forwardRef<any, ListProps & { context?: Context<unknown> }>((props, ref) => {
 		return (
-			<ul {...customprops} {...props} ref={ref}>
+			<ul
+				{...customprops}
+				{...props}
+				style={{ ...props.style, listStyleType: 'none' }}
+				ref={ref}
+			>
 				{props.children}
 			</ul>
 		);
 	});
+const Item = (customprops) =>
+	React.forwardRef<HTMLLIElement, ItemProps<any> & { context?: Context<unknown> }>(
+		(props, ref) => {
+			const { item, ...restprops } = props;
+			const [updateKey, forceUpdate] = useForceUpdate();
+			if (!item) return <li>no item</li>;
+			item.itemref = ref;
+			item.refreshFunction = forceUpdate;
+			return (
+				<li {...restprops} ref={ref} id={'msg-' + item._id}>
+					{props.children}
+				</li>
+			);
+		}
+	);
+
 /* -------------------------------------------------------------------------- */
 /**
  * Advanced Virtual scrolling
@@ -85,6 +106,7 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 			className={props.className}
 			components={{
 				List: List({ className: props.innerClassName }),
+				Item: Item({ className: '' }),
 				Footer: () => {
 					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;
 				},
@@ -122,28 +144,24 @@ type RowRenderProps = {
 	itemProps?: ItemPropsType;
 	ItemRender: React.ElementType<ItemRenderProps>;
 };
-const RowRender = React.memo((props: RowRenderProps) => {
-	const itemref = React.useRef<any>();
-	const [updateKey, forceUpdate] = useForceUpdate();
 
+function RowRender(props: RowRenderProps) {
 	const chatitem = props.item;
 	const itemdata = typeof chatitem === 'object' ? chatitem.data : chatitem;
-	chatitem.refreshFunction = forceUpdate;
-	chatitem.itemref = itemref;
-
 	return (
-		<View ref={itemref} key={chatitem._id} id={'msg-' + chatitem._id}>
-			<props.ItemRender
-				itemref={itemref}
-				chatitem={chatitem}
-				item={itemdata}
-				nextitem={chatitem.nextitem?.data}
-				previtem={chatitem.previtem?.data}
-				itemProps={props.itemProps}
-			/>
-		</View>
+		<props.ItemRender
+			itemref={chatitem.itemref}
+			chatitem={chatitem}
+			item={itemdata}
+			nextitem={chatitem.nextitem?.data}
+			previtem={chatitem.previtem?.data}
+			itemProps={props.itemProps}
+		/>
 	);
-});
+}
+// const RowRender = React.memo((props: RowRenderProps) => {
+
+// });
 
 export type ItemRenderProps = {
 	chatitem: ChatItem;

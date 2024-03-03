@@ -126,8 +126,7 @@ function TopContent(props: any) {
 	const item = props.item;
 	return <div>You have reached the top of the list</div>;
 }
-function ItemRender(props: any) {
-    
+function ItemRender(props: any) { 
 	const item = props.item;
 	const chatitem = props.chatitem as ChatItem;
 	const previtem = props.previtem;
@@ -188,7 +187,7 @@ function ItemRender(props: any) {
 					<button onClick={() => chatitem.Delete()}>delete</button>
 					<button
 						onClick={() => {
-							chatitem.updateId('blahblah');
+							chatitem.updateId(`blah-${Math.random()}`);
 						}}
 					>
 						refresh

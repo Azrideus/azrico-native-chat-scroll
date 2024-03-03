@@ -66,7 +66,6 @@ module.exports = (config, env) => {
 			// 	crypto: 'crypto-browserify',
 			// 	stream: 'stream-browserify',
 			// 	path: 'path-browserify',
-			// 	'react-native': 'react-native-web',
 			// 	cldr: 'cldrjs/dist/cldr',
 			// 	cldr$: 'cldrjs',
 			// }),
