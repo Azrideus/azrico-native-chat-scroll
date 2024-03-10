@@ -67,7 +67,7 @@ const Item = (customprops) =>
 			item.itemref = ref;
 			item.refreshFunction = forceUpdate;
 			return (
-				<li {...restprops} ref={ref} id={'msg-' + item._id}>
+				<li {...restprops} key={updateKey} ref={ref} id={'msg-' + item._id}>
 					{props.children}
 				</li>
 			);
