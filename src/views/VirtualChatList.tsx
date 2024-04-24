@@ -105,8 +105,8 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 			{...props.gridProps}
 			className={props.className}
 			components={{
-				List: List({ className: props.innerClassName }),
-				Item: Item({ className: '' }),
+				List: List({ className: props.innerClassName }) as any,
+				Item: Item({ className: '' }) as any,
 				Footer: () => {
 					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;
 				},
