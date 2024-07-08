@@ -1,6 +1,6 @@
 {
 	"name": "@azrico/native-chat-scroll",
-	"version": "1.0.33",
+	"version": "1.0.34",
 	"main": "dist/index.js",
 	"source": "./index.ts",
 	"scripts": {

@@ -11,6 +11,7 @@ import {
 	VirtuosoProps,
 	ListProps,
 	ItemProps,
+	Components,
 } from '@azrico/react-virtuoso';
 
 /* -------------------------------------------------------------------------- */
@@ -25,6 +26,7 @@ type VirtualScrollerProps = {
 	WrapperContent?: React.ReactNode;
 	BottomContent?: React.ReactNode;
 	TopContent?: React.ReactNode;
+	components?: Partial<{ Item: string; List: string }>;
 	/* -------------------------------------------------------------------------- */
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 	className?: string;
@@ -47,16 +49,13 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 
 const List = (customprops) =>
 	React.forwardRef<any, ListProps & { context?: Context<unknown> }>((props, ref) => {
-		return (
-			<ul
-				{...customprops}
-				{...props}
-				style={{ ...props.style, listStyleType: 'none' }}
-				ref={ref}
-			>
-				{props.children}
-			</ul>
-		);
+		const finalprops = {
+			...customprops,
+			...props,
+			style: { ...props.style, listStyleType: 'none' },
+			ref: ref,
+		};
+		return React.createElement(customprops.component ?? 'ul', finalprops, props.children);
 	});
 const Item = (customprops) =>
 	React.forwardRef<HTMLLIElement, ItemProps<any> & { context?: Context<unknown> }>(
@@ -64,12 +63,19 @@ const Item = (customprops) =>
 			const { item, ...restprops } = props;
 			const [updateKey, forceUpdate] = useForceUpdate();
 			if (!item) return <li>no item</li>;
+
 			item.itemref = ref;
 			item.refreshFunction = forceUpdate;
-			return (
-				<li {...restprops} key={updateKey} ref={ref} id={'msg-' + item._id}>
-					{props.children}
-				</li>
+			const finalprops = {
+				...restprops,
+				key: updateKey,
+				id: 'msg-' + item._id,
+				ref: ref,
+			};
+			return React.createElement(
+				customprops.component ?? 'li',
+				finalprops,
+				props.children
 			);
 		}
 	);
@@ -105,8 +111,11 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 			{...props.gridProps}
 			className={props.className}
 			components={{
-				List: List({ className: props.innerClassName }) as any,
-				Item: Item({ className: '' }) as any,
+				List: List({
+					className: props.innerClassName,
+					component: props.components?.List,
+				}) as any,
+				Item: Item({ className: '', component: props.components?.Item }) as any,
 				Footer: () => {
 					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;
 				},

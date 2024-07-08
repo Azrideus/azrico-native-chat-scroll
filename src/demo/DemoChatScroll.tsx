@@ -89,6 +89,7 @@ export function DemoChatScroll() {
 					}}
 				>
 					<VirtualChatList
+						components={{ Item: 'tr' }}
 						debug={true}
 						managerRef={managerRef as any}
 						ItemRender={ItemRender}
