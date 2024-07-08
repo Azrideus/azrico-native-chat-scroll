@@ -18,7 +18,7 @@ export function useChatManager<T>({
 	const [chatManager, set_chatManager] = React.useState(new ChatManager<T>());
 
 
-	React.useEffect(() => {
+	React.useLayoutEffect(() => {
 		let nextManager = chatManager;
 		const oldLf = chatManager.get_loadFunction();
 		const lfChanged = oldLf != null && oldLf != loadFunction;

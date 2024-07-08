@@ -276,7 +276,10 @@ export class ChatManager<T> {
 		}
 	}
 	private async inner_fetch_items(direction: LoadDirection = LoadDirection.UP) {
-		if (!this.loadFunction) return;
+		if (!this.loadFunction) {
+			this.log_error('loadFunction is not set. you cant use "fetch_items"');
+			return;
+		}
 		const search_query: SearchQuery = {
 			limit: ChatManager.BATCH_SIZE,
 		};
