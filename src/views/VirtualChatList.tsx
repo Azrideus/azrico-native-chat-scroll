@@ -8,7 +8,7 @@ import { useChatQuery } from '../hooks';
 import {
 	Virtuoso,
 	TableVirtuoso,
-	VirtuosoGridProps,
+	TableVirtuosoProps,
 	VirtuosoProps,
 	ListProps,
 	ItemProps,
@@ -21,7 +21,7 @@ type VirtualScrollerProps = {
 	loadFunction: LoadFunctionType;
 	ItemRender: React.ElementType<ItemRenderProps>;
 	/* -------------------------------------------------------------------------- */
-	gridProps?: VirtuosoProps<any, any>;
+	gridProps?: TableVirtuosoProps<any, any>;
 	/* -------------------------------------------------------------------------- */
 	newItems?: ItemData[];
 	WrapperContent?: React.ComponentType<any>;
@@ -50,7 +50,7 @@ function VirtualChatList(props: VirtualScrollerProps) {
 
 /* -------------------------------------------------------------------------- */
 
-const List = (customprops) =>
+const Table = (customprops) =>
 	React.forwardRef<any, ListProps & { context?: Context<unknown> }>((props, ref) => {
 		const finalprops = {
 			...props,
@@ -114,11 +114,11 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 	const root_components = React.useMemo(() => {
 		const cmp = props.components || {};
 		const res = {
-			List: List({
+			Table: Table({
 				className: props.listClassName || props.innerClassName,
 				component: cmp.List,
 			}) as any,
-			Item: Item({ className: '', component: cmp.Item }) as any,
+			TableRow: Item({ className: '', component: cmp.Item }) as any,
 		};
 		return res;
 	}, [props.listClassName || props.innerClassName]);
@@ -127,8 +127,8 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 		const topRender = props.TopContent;
 		const botRender = props.BottomContent;
 		const res = {
-			Footer: isAtVeryBottom ? botRender : wrapperRender,
-			Header: isAtVeryTop ? topRender : wrapperRender,
+			TableFoot: isAtVeryBottom ? botRender : wrapperRender,
+			TableHead: isAtVeryTop ? topRender : wrapperRender,
 		};
 		return res;
 	}, [
@@ -142,7 +142,7 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 		return { height: '100%', width: '100%', overflowX: 'clip' } as any;
 	}, []);
 	return (
-		<Virtuoso
+		<TableVirtuoso
 			{...props.gridProps}
 			className={props.className}
 			components={{ ...root_components, ...wrapper_components }}
