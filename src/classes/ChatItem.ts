@@ -3,7 +3,7 @@ import { UIDHelper } from './HelperFunctions';
 import ChatManager from './ChatManager';
 
 export type ItemData = any;
-export class ChatItem {
+export class ChatItem<T> {
 	readonly key: string;
 	readonly data: ItemData;
 
@@ -11,18 +11,18 @@ export class ChatItem {
 	readonly _creator: string;
 	readonly _created_date: Date;
 	readonly _created_time: number;
-	readonly managerClass: ChatManager;
+	readonly managerClass: ChatManager<T>;
 
 	private __options: any = {};
 
-	public previtem?: ChatItem;
-	public nextitem?: ChatItem;
+	public previtem?: ChatItem<T>;
+	public nextitem?: ChatItem<T>;
 
 	public isNew: boolean = false;
 	public itemref?: React.MutableRefObject<any>;
 	public refreshFunction?: Function;
 
-	constructor(mng: ChatManager, d: ItemData) {
+	constructor(mng: ChatManager<T>, d: ItemData) {
 		//set the data
 		this.managerClass = mng;
 		this.data = d ?? {};

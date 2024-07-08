@@ -47,8 +47,8 @@ export function currentDistanceToBottom(inner: HTMLElement, outer: HTMLElement) 
 export function useForceUpdate() {
 	return React.useReducer((x) => (x + 1) % 100, 0);
 }
-export function fn_eval(fn, props = {}) {
-	if (typeof fn === 'function') return fn(props);
+export function fn_eval(fn, ...props) {
+	if (typeof fn === 'function') return fn(...props);
 	return fn;
 }
 export class UIDHelper {

@@ -21,13 +21,13 @@ export type SearchQuery = {
 	sort?: any;
 	exclude?: any[];
 };
-export type LoadFunctionType = (props: SearchQuery) => Promise<ItemData[]> | ItemData[];
+export type LoadFunctionType<T> = (props: SearchQuery) => Promise<T[]> | T[];
 export type RefreshFunctionType = () => any;
 
-type SetItemsFunctionType = (items: ChatItem[]) => any;
-type MessageSearchParams = ChatItem | ItemData | string | number;
+type SetItemsFunctionType<T> = (items: ChatItem<T>[]) => any;
+type MessageSearchParams<T> = ChatItem<T> | ItemData | string | number;
 
-export class ChatManager {
+export class ChatManager<T> {
 	//items we load in each batch
 	static BATCH_SIZE = 50;
 	static CLEAN_EXTRA_SIZE = 0;
@@ -41,39 +41,39 @@ export class ChatManager {
 
 	//we update scroll positions relative to this item to prevent the scroll from jumping
 
-	private references: Partial<{ item: ChatItem; top: number; bottom: number }> = {};
+	private references: Partial<{ item: ChatItem<T>; top: number; bottom: number }> = {};
 
 	/* -------------------------------------------------------------------------- */
 	#lastLoadDirection: LoadDirection = LoadDirection.NONE;
 	#lastChangeDirection: LoadDirection = LoadDirection.NONE;
 	#lastCountChange: number = 0;
 	#lastDBLoad: number = 0;
-	#currentItems: ChatItem[] = [];
+	#currentItems: ChatItem<T>[] = [];
 	private isLastLoadFromDB: boolean = true;
 
 	private itemsIndexMap: { [key: string]: number } = {};
 
-	private setItemsFunction?: SetItemsFunctionType;
+	private setItemsFunction?: SetItemsFunctionType<T>;
 
-	private loadFunction?: LoadFunctionType;
+	private loadFunction?: LoadFunctionType<T>;
 	private refreshFunction?: RefreshFunctionType;
 
 	private lastCount: number = 0;
 
 	private id_veryTopMessage?: any;
-	private veryBottomMessage?: ChatItem;
+	private veryBottomMessage?: ChatItem<T>;
 
 	private currentLoadOperation?: any;
 
 	constructor() {}
 
-	set_loadFunction(fnc: LoadFunctionType | undefined) {
+	set_loadFunction(fnc: LoadFunctionType<T> | undefined) {
 		this.loadFunction = fnc;
 	}
 	set_refreshFunction(fnc: RefreshFunctionType) {
 		this.refreshFunction = fnc;
 	}
-	set_setItemsFunction(fnc: SetItemsFunctionType) {
+	set_setItemsFunction(fnc: SetItemsFunctionType<T>) {
 		this.setItemsFunction = fnc;
 	}
 
@@ -82,7 +82,7 @@ export class ChatManager {
 	 * returns -1 if not found
 	 * @param search
 	 */
-	getMessageIndex(search: MessageSearchParams): number {
+	getMessageIndex(search: MessageSearchParams<T>): number {
 		if (!search) return -1;
 
 		/* ------------------ search for indexed items by their id ------------------ */
@@ -106,7 +106,7 @@ export class ChatManager {
 	 * get a message by using the `getMessageIndex` function
 	 * @param search
 	 */
-	getMessage(search: MessageSearchParams): ChatItem | undefined {
+	getMessage(search: MessageSearchParams<T>): ChatItem<T> | undefined {
 		if (!search) return undefined;
 		if (
 			typeof search === 'object' &&
@@ -123,7 +123,7 @@ export class ChatManager {
 	 * delete the given message from the list
 	 * @param msg
 	 */
-	async deleteMessage(msg: MessageSearchParams): Promise<boolean> {
+	async deleteMessage(msg: MessageSearchParams<T>): Promise<boolean> {
 		const rmIndex = this.getMessageIndex(msg);
 		if (rmIndex < 0) return false;
 		const newArr = [...this.currentItems];
@@ -137,7 +137,7 @@ export class ChatManager {
 	 * @param search
 	 * @returns
 	 */
-	async refreshMessage(search: MessageSearchParams): Promise<boolean> {
+	async refreshMessage(search: MessageSearchParams<T>): Promise<boolean> {
 		const msg = this.getMessage(search);
 		if (!msg) return false;
 		await msg?.runRefreshFunction();
@@ -152,7 +152,7 @@ export class ChatManager {
 	 * @returns true if success, false otherwise
 	 */
 	async updateMessageId(
-		message: MessageSearchParams,
+		message: MessageSearchParams<T>,
 		newid: string,
 		checkExisting = true
 	) {
@@ -190,12 +190,12 @@ export class ChatManager {
 	 * @returns number of added messages
 	 */
 	async sendNewMessage(
-		msglist: Array<ChatItem | any>,
+		msglist: Array<ChatItem<T> | any>,
 		dir = LoadDirection.DOWN,
 		loadIdFunction?: () => Promise<string>
 	): Promise<number> {
 		try {
-			if (this.currentLoadOperation != null) await this.currentLoadOperation; 
+			if (this.currentLoadOperation != null) await this.currentLoadOperation;
 			this.currentLoadOperation = this.inner_sendNewMessage(msglist, dir, loadIdFunction);
 
 			return await this.currentLoadOperation;
@@ -204,9 +204,9 @@ export class ChatManager {
 		}
 	}
 	private async inner_sendNewMessage(
-		msglist: Array<ChatItem | any>,
+		msglist: Array<ChatItem<T> | any>,
 		dir = LoadDirection.DOWN,
-		loadIdFunction?: (msg: ChatItem) => Promise<string>
+		loadIdFunction?: (msg: ChatItem<T>) => Promise<string>
 	): Promise<number> {
 		if (!msglist) return 0;
 		if (!Array.isArray(msglist)) msglist = [msglist];
@@ -229,7 +229,7 @@ export class ChatManager {
 
 		const addCount = await this._addItems(newMessagesToAdd, dir, false);
 		/* ---------------- one message was added and we need its id ---------------- */
- 
+
 		if (
 			newMessagesToAdd.length === 1 &&
 			addCount === 1 &&
@@ -319,7 +319,7 @@ export class ChatManager {
 	 * @returns
 	 */
 	private async _addItems(
-		items_to_add: ChatItem[],
+		items_to_add: ChatItem<T>[],
 		direction: LoadDirection = LoadDirection.UP,
 		isFromDB: boolean = true
 	): Promise<number> {
@@ -344,7 +344,7 @@ export class ChatManager {
 	 * @returns
 	 */
 	private async _setItems(
-		items: ChatItem[],
+		items: ChatItem<T>[],
 		cleanExtra = true,
 		direction = LoadDirection.NONE
 	): Promise<number> {
@@ -386,9 +386,9 @@ export class ChatManager {
 	 * clear items in the given list to match the max item count
 	 */
 	private cleanExtraItems(
-		inputItems: ChatItem[],
+		inputItems: ChatItem<T>[],
 		removeDirection = LoadDirection.NONE
-	): ChatItem[] {
+	): ChatItem<T>[] {
 		if (!this.isOverTheMax()) return inputItems;
 		let newLenght = Math.min(ChatManager.MAX_LOAD, inputItems.length);
 		let countToRemove =
@@ -418,7 +418,7 @@ export class ChatManager {
 	 * set reference to an item that is in view.
 	 * we do this to make sure our reference item doesnt get unloaded
 	 */
-	public update_reference(baseData?: ChatItem[]) {
+	public update_reference(baseData?: ChatItem<T>[]) {
 		if (!Array.isArray(baseData) || baseData.length === 0) baseData = this.currentItems;
 
 		this.references = {
@@ -604,16 +604,16 @@ export class ChatManager {
 	}
 
 	/* -------------------------------------------------------------------------- */
-	get topMessage(): ChatItem | undefined {
+	get topMessage(): ChatItem<T> | undefined {
 		if (this.currentItems.length === 0) return undefined;
 		return this.currentItems[0];
 	}
-	get middleMessage(): ChatItem | undefined {
+	get middleMessage(): ChatItem<T> | undefined {
 		if (this.currentItems.length === 0) return undefined;
 		if (this.currentItems.length === 1) return this.currentItems[0];
 		return this.currentItems[Math.ceil(this.currentItems.length / 2)];
 	}
-	get bottomMessage(): ChatItem | undefined {
+	get bottomMessage(): ChatItem<T> | undefined {
 		if (this.currentItems.length === 0) return undefined;
 		return this.currentItems[this.currentItems.length - 1];
 	}
@@ -672,7 +672,7 @@ export class ChatManager {
 	 * @param b
 	 * @returns
 	 */
-	public static item_sort(a: ChatItem, b: ChatItem, sortdir = 1) {
+	public static item_sort<T>(a: ChatItem<T>, b: ChatItem<T>, sortdir = 1) {
 		let dtCmp = 0;
 		if (a._created_time && b._created_time) dtCmp = a._created_time - b._created_time;
 		if (dtCmp === 0 && a._created_date && b._created_date)

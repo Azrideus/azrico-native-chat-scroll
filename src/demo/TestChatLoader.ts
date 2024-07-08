@@ -24,9 +24,9 @@ export class TestChatLoader {
 	 * @param props
 	 * @returns
 	 */
-	static async loadFunction(
+	static async loadFunction<T>(
 		props: TestSearchProps,
-		filter_fnc?: (input: ChatItem[], props: TestSearchProps) => ChatItem[]
+		filter_fnc?: (input: ChatItem<T>[], props: TestSearchProps) => ChatItem<T>[]
 	): Promise<any[]> {
 		let { skip, limit, _created_date, _creator, exclude, sort } = props;
 		return await new Promise((resolve, reject) => {
@@ -108,7 +108,7 @@ export class TestChatLoader {
 	 * has delay of 200-400ms
 	 * @param newmsg
 	 */
-	static async addExampleChatAsync(newmsg: any):Promise<string> {
+	static async addExampleChatAsync(newmsg: any): Promise<string> {
 		return await new Promise((resolve, reject) => {
 			setTimeout(() => {
 				resolve(TestChatLoader.addExampleChat(newmsg));

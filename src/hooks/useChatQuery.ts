@@ -5,11 +5,7 @@ import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
  
 import { LoadDirection } from '../classes/ChatManager';
 import { Virtuoso, VirtuosoHandle } from '@azrico/react-virtuoso';
-
-type Props = {
-	chatManager: ChatManager;
-	listRef: React.MutableRefObject<VirtuosoHandle>;
-};
+ 
 
 const MID_MAX = Math.floor(Number.MAX_SAFE_INTEGER / 2);
 /**
@@ -17,16 +13,22 @@ const MID_MAX = Math.floor(Number.MAX_SAFE_INTEGER / 2);
  * @param props
  * @returns currently active `ChatItem` array on the `chatManager`
  */
-export function useChatQuery({ listRef, chatManager }: Props) {
+export function useChatQuery<T>({
+	listRef,
+	chatManager,
+}: {
+	chatManager: ChatManager<T>;
+	listRef: React.MutableRefObject<VirtuosoHandle>;
+}) {
 	const isReady = React.useRef(false);
-	const [currentItems, set_currentItems] = React.useState<ChatItem[]>([]);
+	const [currentItems, set_currentItems] = React.useState<ChatItem<T>[]>([]);
 
 	const [firstItemIndex, set_firstItemIndex] = React.useState(MID_MAX);
 	const [initialTopMostItemIndex, set_initialTopMostItemIndex] = React.useState(MID_MAX);
 	const [isAtVeryTop, set_isAtVeryTop] = React.useState(false);
 	const [isAtVeryBottom, set_isAtVeryBottom] = React.useState(false);
 
-	function setItems(items: ChatItem[]) {
+	function setItems(items: ChatItem<T>[]) {
 		let delta = 0;
 		if (chatManager.lastChangeDirection === LoadDirection.UP) {
 			delta = chatManager.lastCountChange;

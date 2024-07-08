@@ -1,23 +1,16 @@
-import React, { Context } from 'react';
-import { UIDHelper, fn_eval, useForceUpdate } from '../classes/HelperFunctions';
+import React, { DOMAttributes } from 'react';
 import { ChatItem, ItemData } from '../classes/ChatItem';
 import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
 import { useChatManager } from '../hooks/useChatManager';
 
 import { useChatQuery } from '../hooks';
-import {
-	Virtuoso,
-	TableVirtuoso,
-	TableVirtuosoProps,
-	VirtuosoProps,
-	ListProps,
-	ItemProps,
-} from '@azrico/react-virtuoso';
+import { TableVirtuoso, TableVirtuosoProps } from '@azrico/react-virtuoso';
+import { Table, VirtualItem } from './VirtualItem';
 
 /* -------------------------------------------------------------------------- */
 type ItemPropsType = any;
-type VirtualScrollerProps = {
-	loadFunction: LoadFunctionType;
+type VirtualScrollerProps<T> = {
+	loadFunction: LoadFunctionType<T>;
 	ItemRender: React.ElementType<ItemRenderProps>;
 	/* -------------------------------------------------------------------------- */
 	gridProps?: TableVirtuosoProps<any, any>;
@@ -28,7 +21,7 @@ type VirtualScrollerProps = {
 	/**
 	 * this is used in render of each row
 	 */
-	rowProps?: ItemPropsType;
+	rowProps?: DOMAttributes<any>;
 	/* -------------------------------------------------------------------------- */
 	newItems?: ItemData[];
 	WrapperContent?: React.ComponentType<any>;
@@ -36,11 +29,14 @@ type VirtualScrollerProps = {
 	TopContent?: React.ComponentType<any>;
 
 	/* -------------------------------------------------------------------------- */
-	managerRef?: React.MutableRefObject<ChatManager | undefined>;
+	managerRef?: React.MutableRefObject<ChatManager<T> | undefined>;
 	className?: string;
 	itemClassName?: string;
 	innerClassName?: string;
 	listClassName?: string;
+	/* -------------------------------------------------------------------------- */
+	onRowDoubleClick?: (ref, data: ItemData) => any;
+	onRowClick?: (ref, data: ItemData) => any;
 
 	debug?: boolean;
 };
@@ -50,53 +46,18 @@ type VirtualScrollerProps = {
  * use the debug prop to enable logs
  * @param props
  */
-function VirtualChatList(props: VirtualScrollerProps) {
+function VirtualChatList<T>(props: VirtualScrollerProps<T>) {
 	return <VirtualChatListInner {...props} />;
 }
 
 /* -------------------------------------------------------------------------- */
-
-const Table = (customprops) =>
-	React.forwardRef<any, ListProps & { context?: Context<unknown> }>((props, ref) => {
-		const finalprops = {
-			...props,
-			className: customprops.className,
-			// style: { ...props.style, listStyleType: 'none' },
-			ref: ref,
-		};
-		return React.createElement(
-			customprops.component ?? 'table',
-			finalprops,
-			props.children
-		);
-	});
-const Item = (customprops) =>
-	React.forwardRef<HTMLLIElement, ItemProps<any> & { context?: Context<unknown> }>(
-		(props, ref) => {
-			const { item, ...restprops } = props;
-			const [updateKey, forceUpdate] = useForceUpdate();
-			item.itemref = ref;
-			item.refreshFunction = forceUpdate;
-			const finalprops = {
-				...restprops,
-				key: updateKey,
-				id: 'msg-' + item._id,
-				ref: ref,
-			};
-			return React.createElement(
-				customprops.component ?? 'tr',
-				finalprops,
-				props.children
-			);
-		}
-	);
 
 /**
  * Advanced Virtual scrolling
  * use the debug prop to enable logs
  * @param props
  */
-function VirtualChatListInner(props: VirtualScrollerProps) {
+function VirtualChatListInner<T>(props: VirtualScrollerProps<T>) {
 	const listRef = React.useRef<any>();
 	const chatManager = useChatManager({
 		managerRef: props.managerRef,
@@ -125,9 +86,11 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 				className: props.listClassName || props.innerClassName,
 				component: comps?.Table,
 			}) as any,
-			TableRow: Item({
-				...props.rowProps,
+			TableRow: VirtualItem({
+				customProps: props.rowProps,
 				component: comps?.TableRow,
+				onDoubleClick: props.onRowDoubleClick,
+				onClick: props.onRowClick,
 			}) as any,
 		};
 		return res;
@@ -184,9 +147,9 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 		/>
 	);
 }
- 
+
 export type ItemRenderProps = {
-	chatitem: ChatItem;
+	chatitem: ChatItem<any>;
 	item: ItemData;
 	nextitem: ItemData;
 	previtem: ItemData;

@@ -1,10 +1,10 @@
 import React from 'react';
 import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
 
-type Props = {
-	loadFunction: LoadFunctionType;
+type Props<T> = {
+	loadFunction: LoadFunctionType<T>;
 	debug?: boolean;
-	managerRef?: React.MutableRefObject<ChatManager | undefined>;
+	managerRef?: React.MutableRefObject<ChatManager<T> | undefined>;
 };
 
 /**
@@ -12,8 +12,8 @@ type Props = {
  * @param props
  * @returns `ChatManager`
  */
-export function useChatManager({ managerRef, debug, loadFunction }: Props) {
-	const [chatManager, set_chatManager] = React.useState(new ChatManager());
+export function useChatManager<T>({ managerRef, debug, loadFunction }: Props<T>) {
+	const [chatManager, set_chatManager] = React.useState(new ChatManager<T>());
 
 	if (managerRef) managerRef.current = chatManager;
 

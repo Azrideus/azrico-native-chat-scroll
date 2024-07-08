@@ -12,7 +12,7 @@ examplechats.forEach(TestChatLoader.addExampleChat);
 
 export function DemoChatScroll() {
 	const [message, set_message] = React.useState('');
-	const managerRef = React.useRef<ChatManager>();
+	const managerRef = React.useRef<ChatManager<any>>();
 	const timerRef = React.useRef<any>();
 
 	async function addNewMsg(obj: any, dir = LoadDirection.DOWN) {
@@ -127,7 +127,7 @@ function TopContent(props: any) {
 }
 function ItemRender(props: any) {
 	const item = props.item;
-	const chatitem = props.chatitem as ChatItem;
+	const chatitem = props.chatitem as ChatItem<any>;
 	const previtem = props.previtem;
 	if (typeof item !== 'object' || item == null)
 		return (
