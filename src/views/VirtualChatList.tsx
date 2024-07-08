@@ -12,7 +12,6 @@ import {
 	VirtuosoProps,
 	ListProps,
 	ItemProps,
-	Components,
 } from '@azrico/react-virtuoso';
 
 /* -------------------------------------------------------------------------- */
@@ -22,20 +21,27 @@ type VirtualScrollerProps = {
 	ItemRender: React.ElementType<ItemRenderProps>;
 	/* -------------------------------------------------------------------------- */
 	gridProps?: TableVirtuosoProps<any, any>;
+	/**
+	 * this is passed to render of every item
+	 */
+	itemProps?: ItemPropsType;
+	/**
+	 * this is used in render of each row
+	 */
+	rowProps?: ItemPropsType;
 	/* -------------------------------------------------------------------------- */
 	newItems?: ItemData[];
 	WrapperContent?: React.ComponentType<any>;
 	BottomContent?: React.ComponentType<any>;
 	TopContent?: React.ComponentType<any>;
 
-	components?: Partial<{ Item: string; List: string }>;
 	/* -------------------------------------------------------------------------- */
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 	className?: string;
 	itemClassName?: string;
 	innerClassName?: string;
 	listClassName?: string;
-	itemProps?: ItemPropsType;
+
 	debug?: boolean;
 };
 
@@ -55,7 +61,7 @@ const Table = (customprops) =>
 		const finalprops = {
 			...props,
 			className: customprops.className,
-			style: { ...props.style, listStyleType: 'none' },
+			// style: { ...props.style, listStyleType: 'none' },
 			ref: ref,
 		};
 		return React.createElement(
@@ -112,16 +118,20 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 	});
 
 	const root_components = React.useMemo(() => {
-		const cmp = props.components || {};
+		const comps = props.gridProps?.components ?? {};
 		const res = {
+			...comps,
 			Table: Table({
 				className: props.listClassName || props.innerClassName,
-				component: cmp.List,
+				component: comps?.Table,
 			}) as any,
-			TableRow: Item({ className: '', component: cmp.Item }) as any,
+			TableRow: Item({
+				...props.rowProps,
+				component: comps?.TableRow,
+			}) as any,
 		};
 		return res;
-	}, [props.listClassName || props.innerClassName]);
+	}, [props.listClassName, props.innerClassName]);
 	const wrapper_components = React.useMemo(() => {
 		const wrapperRender = props.WrapperContent;
 		const topRender = props.TopContent;
@@ -158,40 +168,23 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 			data={currentItems}
 			startReached={startReached}
 			endReached={endReached}
-			itemContent={(index, item) => {
+			itemContent={(index, chatitem) => {
+				const itemdata = typeof chatitem === 'object' ? chatitem.data : chatitem;
 				return (
-					<RowRender
-						item={item}
+					<props.ItemRender
+						itemref={chatitem.itemref}
+						chatitem={chatitem}
+						item={itemdata}
+						nextitem={chatitem.nextitem?.data}
+						previtem={chatitem.previtem?.data}
 						itemProps={props.itemProps}
-						ItemRender={props.ItemRender}
 					/>
 				);
 			}}
 		/>
 	);
 }
-
-type RowRenderProps = {
-	item: ChatItem;
-	itemProps?: ItemPropsType;
-	ItemRender: React.ElementType<ItemRenderProps>;
-};
-
-function RowRender(props: RowRenderProps) {
-	const chatitem = props.item;
-	const itemdata = typeof chatitem === 'object' ? chatitem.data : chatitem;
-	return (
-		<props.ItemRender
-			itemref={chatitem.itemref}
-			chatitem={chatitem}
-			item={itemdata}
-			nextitem={chatitem.nextitem?.data}
-			previtem={chatitem.previtem?.data}
-			itemProps={props.itemProps}
-		/>
-	);
-}
-
+ 
 export type ItemRenderProps = {
 	chatitem: ChatItem;
 	item: ItemData;
