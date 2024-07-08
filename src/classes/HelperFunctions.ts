@@ -27,10 +27,8 @@ export function useSize(ref: any): sizeResult {
 		if (!ref || !ref.current) {
 			return;
 		}
-
 		const resizeObserver = new ResizeObserver(onResize);
 		resizeObserver.observe(ref.current);
-
 		return () => resizeObserver.disconnect();
 	}, [ref.current, onResize]);
 
@@ -48,6 +46,10 @@ export function currentDistanceToBottom(inner: HTMLElement, outer: HTMLElement) 
 }
 export function useForceUpdate() {
 	return React.useReducer((x) => (x + 1) % 100, 0);
+}
+export function fn_eval(fn, props = {}) {
+	if (typeof fn === 'function') return fn(props);
+	return fn;
 }
 export class UIDHelper {
 	static currentid = 0;

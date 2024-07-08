@@ -57,24 +57,22 @@ export function useChatQuery({ listRef, chatManager }: Props) {
 
 	async function startReached() {
 		if (!isReady.current) return [];
-		// console.log(`startReached`);
 		const result = await chatManager.fetch_items(LoadDirection.UP);
 		if (Array.isArray(result) && result.length > 0) return result;
 		return null;
 	}
 	async function endReached() {
 		if (!isReady.current) return [];
-		// console.log(`endReached`);
 		const result = await chatManager.fetch_items(LoadDirection.DOWN);
 		if (Array.isArray(result) && result.length > 0) return result;
 		return null;
 	}
-	function onScroll(e) {
+	const onScroll = React.useCallback(() => {
 		listRef.current.getState((s) => {
 			chatManager.distanceToTop = s.scrollTop;
 			// console.log(`onScroll`, e, listRef);
 		});
-	}
+	}, [chatManager]);
 	return {
 		currentItems,
 		startReached,

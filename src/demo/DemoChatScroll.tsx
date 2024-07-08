@@ -53,7 +53,8 @@ export function DemoChatScroll() {
 		}
 
 		return false;
-	} 
+	}
+
 	return (
 		<div
 			style={{
@@ -89,15 +90,13 @@ export function DemoChatScroll() {
 					}}
 				>
 					<VirtualChatList
-						components={{ Item: 'tr' }}
+						key={'ss'}
 						debug={true}
 						managerRef={managerRef as any}
 						ItemRender={ItemRender}
-						BottomContent={<BottomContent />}
-						TopContent={<TopContent />}
-						WrapperContent={<LoadingArea />}
+						TopContent={TopContent}
+						WrapperContent={LoadingArea}
 						loadFunction={TestChatLoader.loadFunction}
-						// batchSize={30}
 					/>
 				</div>
 				<form
@@ -124,10 +123,9 @@ export function DemoChatScroll() {
 }
 
 function TopContent(props: any) {
-	const item = props.item;
 	return <div>You have reached the top of the list</div>;
 }
-function ItemRender(props: any) { 
+function ItemRender(props: any) {
 	const item = props.item;
 	const chatitem = props.chatitem as ChatItem;
 	const previtem = props.previtem;

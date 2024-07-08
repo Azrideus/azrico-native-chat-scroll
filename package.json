@@ -1,6 +1,6 @@
 {
 	"name": "@azrico/native-chat-scroll",
-	"version": "1.0.34",
+	"version": "1.0.35",
 	"main": "dist/index.js",
 	"source": "./index.ts",
 	"scripts": {
@@ -35,18 +35,18 @@
 		"typescript": "^4.8.4"
 	},
 	"peerDependencies": {
+		"@azrico/react-virtuoso": "*",
 		"@azrico/types": "*",
 		"lodash.debounce": "*",
 		"react": "*",
-		"react-dom": "*",
-		"@azrico/react-virtuoso": "*"
+		"react-dom": "*"
 	},
 	"dependencies": {
+		"@azrico/react-virtuoso": "^4.7.11",
 		"@azrico/types": "^1.0.9",
 		"lodash.debounce": "^4.0.8",
 		"react": "^18.0.0",
-		"react-dom": "^18.0.0",
-		"@azrico/react-virtuoso": "^4.6.4"
+		"react-dom": "^18.0.0"
 	},
 	"config-overrides-path": "config/config-overrides.js",
 	"browserslist": {

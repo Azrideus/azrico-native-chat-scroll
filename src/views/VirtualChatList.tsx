@@ -1,5 +1,5 @@
 import React, { Context } from 'react';
-import { UIDHelper, useForceUpdate } from '../classes/HelperFunctions';
+import { UIDHelper, fn_eval, useForceUpdate } from '../classes/HelperFunctions';
 import { ChatItem, ItemData } from '../classes/ChatItem';
 import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
 import { useChatManager } from '../hooks/useChatManager';
@@ -7,6 +7,7 @@ import { useChatManager } from '../hooks/useChatManager';
 import { useChatQuery } from '../hooks';
 import {
 	Virtuoso,
+	TableVirtuoso,
 	VirtuosoGridProps,
 	VirtuosoProps,
 	ListProps,
@@ -23,15 +24,17 @@ type VirtualScrollerProps = {
 	gridProps?: VirtuosoProps<any, any>;
 	/* -------------------------------------------------------------------------- */
 	newItems?: ItemData[];
-	WrapperContent?: React.ReactNode;
-	BottomContent?: React.ReactNode;
-	TopContent?: React.ReactNode;
+	WrapperContent?: React.ComponentType<any>;
+	BottomContent?: React.ComponentType<any>;
+	TopContent?: React.ComponentType<any>;
+
 	components?: Partial<{ Item: string; List: string }>;
 	/* -------------------------------------------------------------------------- */
 	managerRef?: React.MutableRefObject<ChatManager | undefined>;
 	className?: string;
 	itemClassName?: string;
 	innerClassName?: string;
+	listClassName?: string;
 	itemProps?: ItemPropsType;
 	debug?: boolean;
 };
@@ -41,7 +44,7 @@ type VirtualScrollerProps = {
  * use the debug prop to enable logs
  * @param props
  */
-export function VirtualChatList(props: VirtualScrollerProps) {
+function VirtualChatList(props: VirtualScrollerProps) {
 	return <VirtualChatListInner {...props} />;
 }
 
@@ -50,20 +53,22 @@ export function VirtualChatList(props: VirtualScrollerProps) {
 const List = (customprops) =>
 	React.forwardRef<any, ListProps & { context?: Context<unknown> }>((props, ref) => {
 		const finalprops = {
-			...customprops,
 			...props,
+			className: customprops.className,
 			style: { ...props.style, listStyleType: 'none' },
 			ref: ref,
 		};
-		return React.createElement(customprops.component ?? 'ul', finalprops, props.children);
+		return React.createElement(
+			customprops.component ?? 'table',
+			finalprops,
+			props.children
+		);
 	});
 const Item = (customprops) =>
 	React.forwardRef<HTMLLIElement, ItemProps<any> & { context?: Context<unknown> }>(
 		(props, ref) => {
 			const { item, ...restprops } = props;
 			const [updateKey, forceUpdate] = useForceUpdate();
-			if (!item) return <li>no item</li>;
-
 			item.itemref = ref;
 			item.refreshFunction = forceUpdate;
 			const finalprops = {
@@ -73,14 +78,13 @@ const Item = (customprops) =>
 				ref: ref,
 			};
 			return React.createElement(
-				customprops.component ?? 'li',
+				customprops.component ?? 'tr',
 				finalprops,
 				props.children
 			);
 		}
 	);
 
-/* -------------------------------------------------------------------------- */
 /**
  * Advanced Virtual scrolling
  * use the debug prop to enable logs
@@ -106,35 +110,54 @@ function VirtualChatListInner(props: VirtualScrollerProps) {
 		chatManager: chatManager,
 		listRef: listRef,
 	});
+
+	const root_components = React.useMemo(() => {
+		const cmp = props.components || {};
+		const res = {
+			List: List({
+				className: props.listClassName || props.innerClassName,
+				component: cmp.List,
+			}) as any,
+			Item: Item({ className: '', component: cmp.Item }) as any,
+		};
+		return res;
+	}, [props.listClassName || props.innerClassName]);
+	const wrapper_components = React.useMemo(() => {
+		const wrapperRender = props.WrapperContent;
+		const topRender = props.TopContent;
+		const botRender = props.BottomContent;
+		const res = {
+			Footer: isAtVeryBottom ? botRender : wrapperRender,
+			Header: isAtVeryTop ? topRender : wrapperRender,
+		};
+		return res;
+	}, [
+		isAtVeryBottom,
+		isAtVeryTop,
+		props.TopContent,
+		props.BottomContent,
+		props.WrapperContent,
+	]);
+	const style = React.useMemo(() => {
+		return { height: '100%', width: '100%', overflowX: 'clip' } as any;
+	}, []);
 	return (
 		<Virtuoso
 			{...props.gridProps}
 			className={props.className}
-			components={{
-				List: List({
-					className: props.innerClassName,
-					component: props.components?.List,
-				}) as any,
-				Item: Item({ className: '', component: props.components?.Item }) as any,
-				Footer: () => {
-					return <>{isAtVeryBottom ? props.BottomContent : props.WrapperContent}</>;
-				},
-				Header: () => {
-					return <>{isAtVeryTop ? props.TopContent : props.WrapperContent}</>;
-				},
-			}}
+			components={{ ...root_components, ...wrapper_components }}
 			/* -------------------------------------------------------------------------- */
-			alignToBottom
+			alignToBottom={true}
+			followOutput="smooth"
 			ref={listRef}
 			onScroll={onScroll}
-			style={{ height: '100%', width: '100%', overflowX: 'clip' }}
+			style={style}
 			firstItemIndex={firstItemIndex}
 			initialTopMostItemIndex={initialTopMostItemIndex}
-			/* -------------------------------------------------------------------------- */
+			/* ---------------------------------S----------------------------------------- */
 			data={currentItems}
 			startReached={startReached}
 			endReached={endReached}
-			followOutput="auto"
 			itemContent={(index, item) => {
 				return (
 					<RowRender
@@ -168,9 +191,6 @@ function RowRender(props: RowRenderProps) {
 		/>
 	);
 }
-// const RowRender = React.memo((props: RowRenderProps) => {
-
-// });
 
 export type ItemRenderProps = {
 	chatitem: ChatItem;
@@ -181,4 +201,4 @@ export type ItemRenderProps = {
 	itemProps: ItemPropsType;
 };
 
-export default VirtualChatList;
+export default React.memo(VirtualChatList);
