@@ -1,5 +1,5 @@
 import React from 'react';
-import ChatManager, { LoadFunctionType } from '../classes/ChatManager';
+import ChatManager, { LoadDirection, LoadFunctionType } from '../classes/ChatManager';
 
 type Props<T> = {
 	loadFunction: LoadFunctionType<T>;
@@ -18,8 +18,20 @@ export function useChatManager<T>({ managerRef, debug, loadFunction }: Props<T>)
 	if (managerRef) managerRef.current = chatManager;
 
 	React.useLayoutEffect(() => {
-		chatManager.set_loadFunction(loadFunction);
+		let nextManager = chatManager;
+		const oldLf = chatManager.get_loadFunction();
+		const lfChanged = oldLf != null && oldLf != loadFunction;
+		/* ---------- reset the chat manager when load function is changed ---------- */
+		if (lfChanged) {
+			nextManager = new ChatManager<T>();
+			set_chatManager(nextManager);
+		}
+		nextManager.set_loadFunction(loadFunction);
+	}, [loadFunction]);
+
+	React.useLayoutEffect(() => {
 		chatManager.show_logs = Boolean(debug);
-	}, [debug, loadFunction]);
+	}, [debug, chatManager]);
+
 	return chatManager;
 }

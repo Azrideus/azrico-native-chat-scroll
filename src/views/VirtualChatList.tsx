@@ -6,6 +6,7 @@ import { useChatManager } from '../hooks/useChatManager';
 import { useChatQuery } from '../hooks';
 import { TableVirtuoso, TableVirtuosoProps } from '@azrico/react-virtuoso';
 import { Table, VirtualItem } from './VirtualItem';
+import { UIDHelper } from '../classes/HelperFunctions';
 
 /* -------------------------------------------------------------------------- */
 type ItemPropsType = any;
@@ -47,7 +48,13 @@ type VirtualScrollerProps<T> = {
  * @param props
  */
 function VirtualChatList<T>(props: VirtualScrollerProps<T>) {
-	return <VirtualChatListInner {...props} />;
+	const chatManager = useChatManager({
+		managerRef: props.managerRef,
+		loadFunction: props.loadFunction,
+		debug: props.debug,
+	});
+	const managerKey = React.useMemo(() => UIDHelper.nextid(), [chatManager]);
+	return <VirtualChatListInner {...props} key={managerKey} chatManager={chatManager} />;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -57,13 +64,11 @@ function VirtualChatList<T>(props: VirtualScrollerProps<T>) {
  * use the debug prop to enable logs
  * @param props
  */
-function VirtualChatListInner<T>(props: VirtualScrollerProps<T>) {
+function VirtualChatListInner<T>(
+	props: VirtualScrollerProps<T> & { chatManager: ChatManager<T> }
+) {
 	const listRef = React.useRef<any>();
-	const chatManager = useChatManager({
-		managerRef: props.managerRef,
-		loadFunction: props.loadFunction,
-		debug: props.debug,
-	});
+
 	const {
 		currentItems,
 		startReached,
@@ -74,7 +79,7 @@ function VirtualChatListInner<T>(props: VirtualScrollerProps<T>) {
 		isAtVeryTop,
 		isAtVeryBottom,
 	} = useChatQuery({
-		chatManager: chatManager,
+		chatManager: props.chatManager,
 		listRef: listRef,
 	});
 
@@ -127,7 +132,7 @@ function VirtualChatListInner<T>(props: VirtualScrollerProps<T>) {
 			style={style}
 			firstItemIndex={firstItemIndex}
 			initialTopMostItemIndex={initialTopMostItemIndex}
-			/* ---------------------------------S----------------------------------------- */
+			/* -------------------------------------------------------------------------- */
 			data={currentItems}
 			startReached={startReached}
 			endReached={endReached}

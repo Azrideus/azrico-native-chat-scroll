@@ -67,6 +67,9 @@ export class ChatManager<T> {
 
 	constructor() {}
 
+	get_loadFunction() {
+		return this.loadFunction;
+	}
 	set_loadFunction(fnc: LoadFunctionType<T> | undefined) {
 		this.loadFunction = fnc;
 	}
