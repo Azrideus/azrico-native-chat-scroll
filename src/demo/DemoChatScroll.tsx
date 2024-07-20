@@ -134,6 +134,8 @@ function ItemRender(props: any) {
 			<div
 				style={{
 					height: '100px',
+					maxHeight: '100px',
+					minHeight: '100px',
 					padding: '5px',
 					display: 'flex',
 					flexDirection: 'column',
@@ -148,7 +150,8 @@ function ItemRender(props: any) {
 	return (
 		<div
 			style={{
-				height: 'max-content',
+				boxSizing: 'border-box',
+				// height: 'max-content',
 				padding: '5px',
 				display: 'flex',
 				flexDirection: 'column',

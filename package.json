@@ -42,8 +42,8 @@
 		"react-dom": "*"
 	},
 	"dependencies": {
-		"@azrico/react-virtuoso": "^4.7.11",
-		"@azrico/types": "^1.0.9",
+		"@azrico/react-virtuoso": "4.7.11-rc.1",
+		"@azrico/types": "^1.0.11",
 		"lodash.debounce": "^4.0.8",
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0"
