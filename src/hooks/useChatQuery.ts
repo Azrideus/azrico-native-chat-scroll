@@ -75,6 +75,7 @@ export function useChatQuery<T>({
 		return null;
 	}, [chatManager]);
 	const onScroll = React.useCallback(() => {
+		if (!listRef.current) return;
 		listRef.current.getState((s) => {
 			chatManager.distanceToTop = s.scrollTop;
 			// console.log(`onScroll`, e, listRef);
